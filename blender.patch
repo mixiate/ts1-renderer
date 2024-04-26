@@ -1,0 +1,29 @@
+diff --git a/intern/cycles/kernel/film/data_passes.h b/intern/cycles/kernel/film/data_passes.h
+index 0105ccdfbb9..acbc4fa0192 100644
+--- a/intern/cycles/kernel/film/data_passes.h
++++ b/intern/cycles/kernel/film/data_passes.h
+@@ -50,10 +50,6 @@ ccl_device_inline void film_write_data_passes(KernelGlobals kg,
+ 
+   if (!(path_flag & PATH_RAY_SINGLE_PASS_DONE)) {
+     if (INTEGRATOR_STATE(state, path, sample) == 0) {
+-      if (flag & PASSMASK(DEPTH)) {
+-        const float depth = camera_z_depth(kg, sd->P);
+-        film_overwrite_pass_float(buffer + kernel_data.film.pass_depth, depth);
+-      }
+       if (flag & PASSMASK(OBJECT_ID)) {
+         const float id = object_pass_id(kg, sd->object);
+         film_overwrite_pass_float(buffer + kernel_data.film.pass_object_id, id);
+@@ -93,6 +89,13 @@ ccl_device_inline void film_write_data_passes(KernelGlobals kg,
+     }
+   }
+ 
++  if (flag & PASSMASK(DEPTH)) {
++    float old_depth = atomic_add_and_fetch_float(buffer + kernel_data.film.pass_depth, 0);
++    while (old_depth == 0.0f) {
++      old_depth = atomic_compare_and_swap_float(buffer + kernel_data.film.pass_depth, old_depth, camera_z_depth(kg, sd->P));
++    }
++  }
++
+   if (kernel_data.film.cryptomatte_passes) {
+     const Spectrum throughput = INTEGRATOR_STATE(state, path, throughput);
+     const float matte_weight = average(throughput) *
