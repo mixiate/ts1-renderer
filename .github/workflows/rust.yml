@@ -1,0 +1,21 @@
+name: Release
+
+on: 
+  push:
+    tags:
+       - "v*.*.*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ts1-renderer.py
