@@ -1065,11 +1065,9 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         palette_id = self.layout.column(align=True)
         palette_id.prop(context.scene, "tsr_palette_id")
 
-        frame_range_start = self.layout.column(align=True)
-        frame_range_start.prop(context.scene, "tsr_frame_range_start")
-
-        frame_range_end = self.layout.column(align=True)
-        frame_range_end.prop(context.scene, "tsr_frame_range_end")
+        frame_range = self.layout.column(align=True)
+        frame_range.prop(context.scene, "tsr_frame_range_start")
+        frame_range.prop(context.scene, "tsr_frame_range_end",)
 
         if (
             is_gltf_variants_enabled(context)
