@@ -1074,13 +1074,6 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         use_depth_buffer = self.layout.column(align=True)
         use_depth_buffer.prop(context.scene, "tsr_use_depth_buffer")
 
-        auto_split = self.layout.column(align=True)
-        auto_split.prop(context.scene, "tsr_auto_split")
-        auto_update_xml = self.layout.column(align=True)
-        auto_update_xml.prop(context.scene, "tsr_auto_update_xml")
-        auto_compile = self.layout.column(align=True)
-        auto_compile.prop(context.scene, "tsr_auto_compile")
-
         if (
             is_gltf_variants_enabled(context)
             and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
@@ -1091,11 +1084,13 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         render_button = self.layout.column(align=True)
         render_button.operator("scene.tsr_render", text="Render")
 
-        split_button = self.layout.column(align=True)
-        split_button.operator("scene.tsr_split", text="Split")
+        split = self.layout.split(factor=0.7)
+        split.operator("scene.tsr_split", text="Split")
+        split.prop(context.scene, "tsr_auto_split", text="Auto")
 
-        update_button = self.layout.column(align=True)
-        update_button.operator("scene.tsr_update_xml", text="Update XML")
+        update = self.layout.split(factor=0.7)
+        update.operator("scene.tsr_update_xml", text="Update XML")
+        update.prop(context.scene, "tsr_auto_update_xml", text="Auto")
 
         use_advanced_compile = self.layout.column(align=True)
         use_advanced_compile.prop(context.scene, "tsr_use_advanced_compile")
@@ -1116,8 +1111,9 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
                 compile_all_variants = self.layout.column(align=True)
                 compile_all_variants.prop(context.scene, "tsr_compile_all_variants")
 
-            compile_button = self.layout.column(align=True)
+            compile_button = self.layout.split(factor=0.7)
             compile_button.operator("scene.tsr_compile_advanced", text="Compile")
+            compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
 
             if is_gltf_variants_enabled(context):
                 self.layout.separator()
@@ -1125,8 +1121,9 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
                 bpy.types.SCENE_PT_gltf2_variants.draw(self, context)
 
         else:
-            compile_button = self.layout.column(align=True)
+            compile_button = self.layout.split(factor=0.7)
             compile_button.operator("scene.tsr_compile", text="Compile")
+            compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
 
 
 def register():
