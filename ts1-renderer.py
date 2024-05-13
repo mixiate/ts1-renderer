@@ -699,15 +699,6 @@ class tsr_render(bpy.types.Operator):
         if context.scene.tsr_auto_split is True:
             tsr_split.execute(self, context)
 
-        if context.scene.tsr_auto_update_xml is True:
-            tsr_update_xml.execute(self, context)
-
-        if context.scene.tsr_auto_compile is True:
-            if context.scene.tsr_use_advanced_compile:
-                tsr_compile_advanced.execute(self, context)
-            else:
-                tsr_compile.execute(self, context)
-
         return {"FINISHED"}
 
 
@@ -831,7 +822,7 @@ class tsr_split(bpy.types.Operator):
         if context.scene.tsr_auto_update_xml is True:
             tsr_update_xml.execute(self, context)
 
-        if context.scene.tsr_auto_compile is True:
+        elif context.scene.tsr_auto_compile is True:
             if context.scene.tsr_use_advanced_compile:
                 tsr_compile_advanced.execute(self, context)
             else:
@@ -1243,13 +1234,13 @@ def register():
     )
     bpy.types.Scene.tsr_auto_update_xml = bpy.props.BoolProperty(
         name="Auto Update XML",
-        description="Automatically update xml after rendering or splitting",
+        description="Automatically update xml after splitting",
         default=False,
         options=set(),
     )
     bpy.types.Scene.tsr_auto_compile = bpy.props.BoolProperty(
         name="Auto Compile",
-        description="Automatically compile after rendering, splitting or updating xml",
+        description="Automatically compile after splitting or updating xml",
         default=False,
         options=set(),
     )
