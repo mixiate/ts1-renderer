@@ -734,6 +734,8 @@ def write_object_description(context):
             {
                 "name": frame_name,
                 "sprite_id": context.scene.tsr_sprite_id,
+                "sprite_id_reverse_x": context.scene.tsr_sprite_id_reverse_x,
+                "sprite_id_reverse_y": context.scene.tsr_sprite_id_reverse_y,
                 "palette_id": context.scene.tsr_palette_id,
             }
         )
@@ -1060,11 +1062,17 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         render_compass.prop(context.scene, "tsr_render_sw")
         render_compass.prop(context.scene, "tsr_render_se")
 
-        sprite_group = self.layout.column(align=True)
-        sprite_group.prop(context.scene, "tsr_sprite_id")
+        sprite_id_box = self.layout.box()
 
-        palette_group = self.layout.column(align=True)
-        palette_group.prop(context.scene, "tsr_palette_id")
+        sprite_id = sprite_id_box.column(align=True)
+        sprite_id.prop(context.scene, "tsr_sprite_id")
+
+        sprite_id_rev = sprite_id_box.grid_flow(align=True, columns=2, row_major=True)
+        sprite_id_rev.prop(context.scene, "tsr_sprite_id_reverse_x", text="Reverse X")
+        sprite_id_rev.prop(context.scene, "tsr_sprite_id_reverse_y", text="Reverse Y")
+
+        palette_id = self.layout.column(align=True)
+        palette_id.prop(context.scene, "tsr_palette_id")
 
         frame_range_start = self.layout.column(align=True)
         frame_range_start.prop(context.scene, "tsr_frame_range_start")
@@ -1203,6 +1211,17 @@ def register():
         description="The base sprite ID for this frame. Tiles of multi tile objects will have successive IDs. Make sure to keyframe this for every frame",
         default=0,
     )
+    bpy.types.Scene.tsr_sprite_id_reverse_x = bpy.props.BoolProperty(
+        name="Sprite ID Reverse X",
+        description="Reverse the generated sprite ID for multi tile objects on the x axis",
+        default=False,
+    )
+    bpy.types.Scene.tsr_sprite_id_reverse_y = bpy.props.BoolProperty(
+        name="Sprite ID Reverse Y",
+        description="Reverse the generated sprite ID for multi tile objects on the y axis",
+        default=False,
+    )
+
     bpy.types.Scene.tsr_palette_id = bpy.props.IntProperty(
         name="Palette ID",
         description="The palette ID for this frame. Frames with the same ID will share a single palette. Make sure to keyframe this for every frame",
