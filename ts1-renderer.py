@@ -1031,9 +1031,9 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         if os.path.isfile(bpy.path.abspath(context.scene.tsr_compiler_path)) is False:
             return
 
-        dimensions = self.layout.column(align=True)
-        dimensions.prop(context.scene, "tsr_x")
-        dimensions.prop(context.scene, "tsr_y")
+        dimensions = self.layout.split(align=True)
+        dimensions.prop(context.scene, "tsr_x", text="X")
+        dimensions.prop(context.scene, "tsr_y", text="Y")
 
         set_resolution_and_camera_button = self.layout.column(align=True)
         set_resolution_and_camera_button.operator(
