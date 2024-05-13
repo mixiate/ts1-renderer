@@ -477,7 +477,7 @@ def render_rotation(context, direction, rotation, output_dir):
 
     render_group_node_tree.links.new(input_node.outputs[2], depth_output_node.inputs[0])
 
-    depth_switch_node.check = context.scene.tsr_use_depth_buffer
+    depth_switch_node.check = hasattr(bpy.app, "tsr_depth")
 
     output_dir_relative = "//" + output_dir
 
@@ -502,7 +502,7 @@ def render_rotation(context, direction, rotation, output_dir):
 
     original_resolution_percentage = context.scene.render.resolution_percentage
 
-    if context.scene.tsr_use_depth_buffer is False:
+    if hasattr(bpy.app, "tsr_depth") is False:
         context.scene.cycles.samples = 1
 
     context.scene.render.resolution_percentage = 25
@@ -514,7 +514,7 @@ def render_rotation(context, direction, rotation, output_dir):
 
     context.scene.cycles.samples = original_cycles_samples
 
-    if context.scene.tsr_use_depth_buffer is False:
+    if hasattr(bpy.app, "tsr_depth") is False:
         context.scene.render.resolution_percentage = 25
         render_depth(context, "small", direction, rotation, output_dir, True)
         context.scene.render.resolution_percentage = 50
@@ -640,7 +640,7 @@ class tsr_render(bpy.types.Operator):
             depth_override_material.node_tree.nodes["Principled BSDF"]
         )
 
-        if context.scene.tsr_use_depth_buffer is False:
+        if hasattr(bpy.app, "tsr_depth") is False:
             camera_data_node = depth_override_material.node_tree.nodes.new(
                 type="ShaderNodeCameraData"
             )
@@ -1071,9 +1071,6 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         frame_range_end = self.layout.column(align=True)
         frame_range_end.prop(context.scene, "tsr_frame_range_end")
 
-        use_depth_buffer = self.layout.column(align=True)
-        use_depth_buffer.prop(context.scene, "tsr_use_depth_buffer")
-
         if (
             is_gltf_variants_enabled(context)
             and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
@@ -1214,13 +1211,6 @@ def register():
         default=0,
     )
 
-    bpy.types.Scene.tsr_use_depth_buffer = bpy.props.BoolProperty(
-        name="Use Depth Buffer",
-        description="Use the depth buffer when outputting depth. For use with a specially modified blender build only",
-        default=False,
-        options=set(),
-    )
-
     bpy.types.Scene.tsr_auto_split = bpy.props.BoolProperty(
         name="Auto Split",
         description="Automatically split after rendering",
@@ -1309,8 +1299,6 @@ def unregister():
 
     del bpy.types.Scene.tsr_sprite_id
     del bpy.types.Scene.tsr_palette_id
-
-    del bpy.types.Scene.tsr_use_depth_buffer
 
     del bpy.types.Scene.tsr_auto_split
     del bpy.types.Scene.tsr_auto_update_xml

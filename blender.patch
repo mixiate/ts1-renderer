@@ -27,3 +27,25 @@ index 0105ccdfbb9..acbc4fa0192 100644
    if (kernel_data.film.cryptomatte_passes) {
      const Spectrum throughput = INTEGRATOR_STATE(state, path, throughput);
      const float matte_weight = average(throughput) *
+diff --git a/source/blender/python/intern/bpy_app.cc b/source/blender/python/intern/bpy_app.cc
+index 14c6178bd48..eb3317a5abe 100644
+--- a/source/blender/python/intern/bpy_app.cc
++++ b/source/blender/python/intern/bpy_app.cc
+@@ -120,6 +120,8 @@ static PyStructSequence_Field app_info_fields[] = {
+     /* Modules (not struct sequence). */
+     {"icons", "Manage custom icons"},
+     {"timers", "Manage timers"},
++
++    {"tsr_depth", "Exists if built with TS1 Renderers depth patch"},
+     {nullptr},
+ };
+ 
+@@ -207,6 +209,8 @@ static PyObject *make_app_info()
+   SetObjItem(BPY_app_icons_module());
+   SetObjItem(BPY_app_timers_module());
+ 
++  SetIntItem(1);
++
+ #undef SetIntItem
+ #undef SetStrItem
+ #undef SetBytesItem
