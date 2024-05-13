@@ -1058,7 +1058,7 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         sprite_id = sprite_id_box.column(align=True)
         sprite_id.prop(context.scene, "tsr_sprite_id")
 
-        sprite_id_rev = sprite_id_box.grid_flow(align=True, columns=2, row_major=True)
+        sprite_id_rev = sprite_id.grid_flow(align=True, columns=2, row_major=True)
         sprite_id_rev.prop(context.scene, "tsr_sprite_id_reverse_x", text="Reverse X")
         sprite_id_rev.prop(context.scene, "tsr_sprite_id_reverse_y", text="Reverse Y")
 
