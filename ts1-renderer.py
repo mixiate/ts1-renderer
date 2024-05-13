@@ -1092,15 +1092,23 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         update.operator("scene.tsr_update_xml", text="Update XML")
         update.prop(context.scene, "tsr_auto_update_xml", text="Auto")
 
-        use_advanced_compile = self.layout.column(align=True)
+        compile_button = self.layout.split(factor=0.7)
+        if context.scene.tsr_use_advanced_compile:
+            compile_button.operator("scene.tsr_compile_advanced", text="Compile")
+        else:
+            compile_button.operator("scene.tsr_compile", text="Compile")
+        compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
+
+        advanced_compile_box = self.layout.box()
+        use_advanced_compile = advanced_compile_box.column(align=True)
         use_advanced_compile.prop(context.scene, "tsr_use_advanced_compile")
 
         if context.scene.tsr_use_advanced_compile:
-            creator_name = self.layout.column(align=True)
+            creator_name = advanced_compile_box.column(align=True)
             creator_name.label(text="Creator name:")
             creator_name.prop(context.scene, "tsr_creator_name")
 
-            format_string = self.layout.column(align=True)
+            format_string = advanced_compile_box.column(align=True)
             format_string.label(text="Format string:")
             format_string.prop(context.scene, "tsr_format_string")
 
@@ -1108,22 +1116,12 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
                 is_gltf_variants_enabled(context)
                 and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
             ):
-                compile_all_variants = self.layout.column(align=True)
+                compile_all_variants = advanced_compile_box.column(align=True)
                 compile_all_variants.prop(context.scene, "tsr_compile_all_variants")
 
-            compile_button = self.layout.split(factor=0.7)
-            compile_button.operator("scene.tsr_compile_advanced", text="Compile")
-            compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
-
             if is_gltf_variants_enabled(context):
-                self.layout.separator()
                 self.layout.label(text="glTF Material Variants")
                 bpy.types.SCENE_PT_gltf2_variants.draw(self, context)
-
-        else:
-            compile_button = self.layout.split(factor=0.7)
-            compile_button.operator("scene.tsr_compile", text="Compile")
-            compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
 
 
 def register():
