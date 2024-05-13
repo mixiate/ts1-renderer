@@ -594,7 +594,7 @@ def check_blender_file_is_saved(self, context):
 
 
 class tsr_render(bpy.types.Operator):
-    """Render all sprites in the current frame range"""
+    """Render all frames in the current frame range"""
 
     bl_idname = "scene.tsr_render"
     bl_label = "Render"
@@ -780,7 +780,7 @@ def split_frames(self, context, source_directory, object_name, variant):
 
 
 class tsr_split(bpy.types.Operator):
-    """Split"""
+    """Split rendered images in to sprites"""
 
     bl_idname = "scene.tsr_split"
     bl_label = "Split"
@@ -832,7 +832,7 @@ class tsr_split(bpy.types.Operator):
 
 
 class tsr_update_xml(bpy.types.Operator):
-    """Update XML"""
+    """Update the object XML file with the split sprites"""
 
     bl_idname = "scene.tsr_update_xml"
     bl_label = "Update XML"
@@ -893,7 +893,7 @@ class tsr_update_xml(bpy.types.Operator):
 
 
 class tsr_compile(bpy.types.Operator):
-    """Compile"""
+    """Compile the xml file in to the final iff file"""
 
     bl_idname = "scene.tsr_compile"
     bl_label = "Compile"
@@ -925,7 +925,7 @@ class tsr_compile(bpy.types.Operator):
 
 
 class tsr_compile_advanced(bpy.types.Operator):
-    """Compile"""
+    """Compile the xml file in to the final iff file"""
 
     bl_idname = "scene.tsr_compile_advanced"
     bl_label = "Compile"
