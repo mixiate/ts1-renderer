@@ -1025,7 +1025,8 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
             return
 
         compiler_path = self.layout.column(align=True)
-        compiler_path.label(text="Compiler path:")
+        if context.scene.tsr_compiler_path == "":
+            compiler_path.label(text="Compiler path:")
         compiler_path.prop(context.scene, "tsr_compiler_path")
 
         if os.path.isfile(bpy.path.abspath(context.scene.tsr_compiler_path)) is False:
