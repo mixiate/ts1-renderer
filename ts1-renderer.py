@@ -1208,7 +1208,7 @@ def register():
 
     bpy.types.Scene.tsr_sprite_id = bpy.props.IntProperty(
         name="Base Sprite ID",
-        description="The base sprite ID for this frame. Tiles of multi tile objects will have successive IDs. Make sure to keyframe this for every frame",
+        description="The base sprite ID for this frame. Tiles of multi tile objects will have successive IDs, counting up the x axis, then the y. Each frames ID needs to be at least X*Y apart from eachother. Make sure to keyframe this for every frame",
         default=0,
     )
     bpy.types.Scene.tsr_sprite_id_reverse_x = bpy.props.BoolProperty(
