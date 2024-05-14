@@ -4,11 +4,14 @@ bl_info = {
     "author": "mix",
     "version": (1, 2, 0),
     "blender": (4, 1, 0),
-    "location": "Toolshelf",
+    "location": "View3D > Sidebar > The Sims Tab",
     "warning": "",
-    "wiki_url": "",
+    "doc_url": "https://github.com/mixsims/ts1-renderer/wiki",
+    "tracker_url": "https://github.com/mixsims/ts1-renderer/issues",
+    "support": "COMMUNITY",
     "category": "Render",
 }
+
 
 from bpy_extras import object_utils
 import bmesh
