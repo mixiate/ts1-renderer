@@ -1004,6 +1004,41 @@ class tsr_compile_advanced(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class tsr_add_rotations(bpy.types.Operator):
+    """Add all 4 rotations to the draw groups in the object's XML file"""
+
+    bl_idname = "scene.tsr_add_rotations"
+    bl_label = "Add Rotations"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        if check_blender_file_is_saved(self, context) is False:
+            return {"FINISHED"}
+
+        source_directory = bpy.path.abspath("//")
+        blender_file_name = (
+            bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
+        )
+        xml_file_path = os.path.join(source_directory, blender_file_name)
+
+        result = subprocess.run(
+            [
+                bpy.path.abspath(context.scene.tsr_compiler_path),
+                "add-rotations",
+                xml_file_path,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout != "":
+            for line in result.stdout.splitlines():
+                self.report({"INFO"}, line)
+        if result.stderr != "":
+            self.report({"ERROR"}, result.stderr)
+
+        return {"FINISHED"}
+
+
 class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
     bl_label = "The Sims Renderer"
     bl_space_type = "VIEW_3D"
@@ -1053,6 +1088,9 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         render_compass.prop(context.scene, "tsr_render_ne")
         render_compass.prop(context.scene, "tsr_render_sw")
         render_compass.prop(context.scene, "tsr_render_se")
+
+        add_rotations = self.layout.column()
+        add_rotations.operator("scene.tsr_add_rotations", text="Add Rotations")
 
         sprite_id_box = self.layout.box()
 
@@ -1132,6 +1170,7 @@ def register():
     bpy.utils.register_class(tsr_update_xml)
     bpy.utils.register_class(tsr_compile)
     bpy.utils.register_class(tsr_compile_advanced)
+    bpy.utils.register_class(tsr_add_rotations)
     bpy.utils.register_class(TSR_PT_TheSimsRendererPanel)
 
     bpy.types.Scene.tsr_x = bpy.props.IntProperty(
@@ -1273,6 +1312,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(TSR_PT_TheSimsRendererPanel)
+    bpy.utils.unregister_class(tsr_add_rotations)
     bpy.utils.unregister_class(tsr_compile_advanced)
     bpy.utils.unregister_class(tsr_compile)
     bpy.utils.unregister_class(tsr_update_xml)
