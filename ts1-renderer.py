@@ -1336,10 +1336,13 @@ def unregister():
     del bpy.types.Scene.tsr_render_se
     del bpy.types.Scene.tsr_render_sw
 
-    del bpy.types.Scene.tsr_minimum_frame_range
-    del bpy.types.Scene.tsr_maximum_frame_range
+    del bpy.types.Scene.tsr_frame_range_start
+    del bpy.types.Scene.tsr_frame_range_end
 
     del bpy.types.Scene.tsr_sprite_id
+    del bpy.types.Scene.tsr_sprite_id_reverse_x
+    del bpy.types.Scene.tsr_sprite_id_reverse_y
+
     del bpy.types.Scene.tsr_palette_id
 
     del bpy.types.Scene.tsr_auto_split
