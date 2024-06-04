@@ -1,8 +1,8 @@
 bl_info = {
-    "name": "TS1 Renderer",
+    "name": "The Sims 1 Renderer",
     "description": "Renders sprites for The Sims 1. To be used with the TS1 Compiler.",
     "author": "mix",
-    "version": (1, 2, 1),
+    "version": (1, 3, 0),
     "blender": (4, 1, 0),
     "location": "View3D > Sidebar > The Sims Tab",
     "warning": "",
@@ -13,7 +13,15 @@ bl_info = {
 }
 
 
-from bpy_extras import object_utils
+if "bpy" in locals():
+    import sys
+    import importlib
+
+    for name in tuple(sys.modules):
+        if name.startswith(__name__ + "."):
+            importlib.reload(sys.modules[name])
+
+
 import bmesh
 import bpy
 import bpy_extras
@@ -26,12 +34,29 @@ import shutil
 import subprocess
 
 
-class tsr_set_view_north_west(bpy.types.Operator):
+class TS1R_addon_preferences(bpy.types.AddonPreferences):
+    """Preferences for the addon."""
+
+    bl_idname = __name__
+
+    compiler_path: bpy.props.StringProperty(
+        name="TS1 Compiler Path",
+        description="Path to the TS1 Compiler",
+        subtype='FILE_PATH',
+        default="",
+    )
+
+    def draw(self, _: bpy.context) -> None:
+        """Draw the addon preferences ui."""
+        self.layout.prop(self, "compiler_path")
+
+
+class TS1R_OT_set_view_north_west(bpy.types.Operator):
     """Rotates the The Sims Rotation Origin object to the north west view position"""
 
-    bl_idname = "scene.tsr_set_view_north_west"
+    bl_idname = "tsr.set_view_north_west"
     bl_label = "Set View North West"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         update(self, context)
@@ -40,15 +65,15 @@ class tsr_set_view_north_west(bpy.types.Operator):
             0,
             math.radians(0),
         )
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_set_view_north_east(bpy.types.Operator):
+class TS1R_OT_set_view_north_east(bpy.types.Operator):
     """Rotates the The Sims Rotation Origin object to the north east view position"""
 
-    bl_idname = "scene.tsr_set_view_north_east"
+    bl_idname = "tsr.set_view_north_east"
     bl_label = "Set View North East"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         update(self, context)
@@ -57,15 +82,15 @@ class tsr_set_view_north_east(bpy.types.Operator):
             0,
             math.radians(-90),
         )
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_set_view_south_east(bpy.types.Operator):
+class TS1R_OT_set_view_south_east(bpy.types.Operator):
     """Rotates the The Sims Rotation Origin object to the south east view position"""
 
-    bl_idname = "scene.tsr_set_view_south_east"
+    bl_idname = "tsr.set_view_south_east"
     bl_label = "Set View South East"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         update(self, context)
@@ -74,15 +99,15 @@ class tsr_set_view_south_east(bpy.types.Operator):
             0,
             math.radians(-180),
         )
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_set_view_south_west(bpy.types.Operator):
+class TS1R_OT_set_view_south_west(bpy.types.Operator):
     """Rotates the The Sims Rotation Origin object to the south west view position"""
 
-    bl_idname = "scene.tsr_set_view_south_west"
+    bl_idname = "tsr.set_view_south_west"
     bl_label = "Set View South West"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         update(self, context)
@@ -91,15 +116,15 @@ class tsr_set_view_south_west(bpy.types.Operator):
             0,
             math.radians(-270),
         )
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_set_render_resolution_and_camera(bpy.types.Operator):
+class TS1R_OT_set_render_resolution_and_camera(bpy.types.Operator):
     """Sets the render resolution to the sprites dimensions and sets the active camera to The Sims Camera"""
 
-    bl_idname = "scene.tsr_set_render_resolution_and_camera"
+    bl_idname = "tsr.set_render_resolution_and_camera"
     bl_label = "Set Render Resolution and Camera"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         TILE_WIDTH_HALF = 64
@@ -111,15 +136,11 @@ class tsr_set_render_resolution_and_camera(bpy.types.Operator):
 
         # keep the image proportional or the orthographic scale calculation
         # is thrown off when the image becomes wider than it is tall
-        context.scene.render.resolution_x = BASE_SPRITE_WIDTH + (
-            extra_tiles * TILE_WIDTH_HALF
-        )
-        context.scene.render.resolution_y = BASE_SPRITE_HEIGHT + (
-            extra_tiles * TILE_WIDTH_HALF
-        )
+        context.scene.render.resolution_x = BASE_SPRITE_WIDTH + (extra_tiles * TILE_WIDTH_HALF)
+        context.scene.render.resolution_y = BASE_SPRITE_HEIGHT + (extra_tiles * TILE_WIDTH_HALF)
 
         context.scene.camera = bpy.data.objects["The Sims Camera"]
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 def update(self, context):
@@ -127,76 +148,60 @@ def update(self, context):
 
     depth_group_node_tree = bpy.data.node_groups.get("The Sims Renderer Pre Depth")
     if depth_group_node_tree is None:
-        depth_group_node_tree = bpy.data.node_groups.new(
-            "The Sims Renderer Pre Depth", "CompositorNodeTree"
-        )
+        depth_group_node_tree = bpy.data.node_groups.new("The Sims Renderer Pre Depth", 'CompositorNodeTree')
         depth_group_node_tree.interface.new_socket(
             name="Image",
-            in_out="INPUT",
-            socket_type="NodeSocketColor",
+            in_out='INPUT',
+            socket_type='NodeSocketColor',
         )
         depth_group_node_tree.interface.new_socket(
             name="Depth",
-            in_out="INPUT",
-            socket_type="NodeSocketFloat",
+            in_out='INPUT',
+            socket_type='NodeSocketFloat',
         )
         depth_group_node_tree.interface.new_socket(
             name="Depth",
-            in_out="OUTPUT",
-            socket_type="NodeSocketFloat",
+            in_out='OUTPUT',
+            socket_type='NodeSocketFloat',
         )
 
     depth_input_node = depth_group_node_tree.nodes.get("The Sims Depth Input")
     if depth_input_node is None:
-        depth_input_node = depth_group_node_tree.nodes.new("NodeGroupInput")
+        depth_input_node = depth_group_node_tree.nodes.new('NodeGroupInput')
         depth_input_node.location = (0, 0)
         depth_input_node.name = "The Sims Depth Input"
         depth_input_node.label = depth_input_node.name
 
-    depth_alpha_convert_node = depth_group_node_tree.nodes.get(
-        "The Sims Depth Alpha Convert"
-    )
+    depth_alpha_convert_node = depth_group_node_tree.nodes.get("The Sims Depth Alpha Convert")
     if depth_alpha_convert_node is None:
-        depth_alpha_convert_node = depth_group_node_tree.nodes.new(
-            type="CompositorNodePremulKey"
-        )
+        depth_alpha_convert_node = depth_group_node_tree.nodes.new(type='CompositorNodePremulKey')
         depth_alpha_convert_node.location = (200, 0)
         depth_alpha_convert_node.name = "The Sims Depth Alpha Convert"
         depth_alpha_convert_node.label = depth_alpha_convert_node.name
-        depth_alpha_convert_node.mapping = "PREMUL_TO_STRAIGHT"
-        depth_group_node_tree.links.new(
-            depth_input_node.outputs[0], depth_alpha_convert_node.inputs[0]
-        )
+        depth_alpha_convert_node.mapping = 'PREMUL_TO_STRAIGHT'
+        depth_group_node_tree.links.new(depth_input_node.outputs[0], depth_alpha_convert_node.inputs[0])
 
     depth_switch_node = depth_group_node_tree.nodes.get("The Sims Depth Switch")
     if depth_switch_node is None:
-        depth_switch_node = depth_group_node_tree.nodes.new("CompositorNodeSwitch")
+        depth_switch_node = depth_group_node_tree.nodes.new('CompositorNodeSwitch')
         depth_switch_node.location = (400, 0)
         depth_switch_node.name = "The Sims Depth Switch"
         depth_switch_node.label = depth_switch_node.name
         depth_switch_node.check = False
-        depth_group_node_tree.links.new(
-            depth_alpha_convert_node.outputs[0], depth_switch_node.inputs[0]
-        )
-        depth_group_node_tree.links.new(
-            depth_input_node.outputs[1], depth_switch_node.inputs[1]
-        )
+        depth_group_node_tree.links.new(depth_alpha_convert_node.outputs[0], depth_switch_node.inputs[0])
+        depth_group_node_tree.links.new(depth_input_node.outputs[1], depth_switch_node.inputs[1])
 
     depth_output_node = depth_group_node_tree.nodes.get("The Sims Depth Output")
     if depth_output_node is None:
-        depth_output_node = depth_group_node_tree.nodes.new("NodeGroupOutput")
+        depth_output_node = depth_group_node_tree.nodes.new('NodeGroupOutput')
         depth_output_node.location = (600, 0)
         depth_output_node.name = "The Sims Depth Output"
         depth_output_node.label = depth_output_node.name
-        depth_group_node_tree.links.new(
-            depth_switch_node.outputs[0], depth_output_node.inputs[0]
-        )
+        depth_group_node_tree.links.new(depth_switch_node.outputs[0], depth_output_node.inputs[0])
 
-    depth_group_node = bpy.context.scene.node_tree.nodes.get(
-        "The Sims Renderer Pre Depth"
-    )
+    depth_group_node = bpy.context.scene.node_tree.nodes.get("The Sims Renderer Pre Depth")
     if depth_group_node is None:
-        depth_group_node = bpy.context.scene.node_tree.nodes.new("CompositorNodeGroup")
+        depth_group_node = bpy.context.scene.node_tree.nodes.new('CompositorNodeGroup')
         depth_group_node.node_tree = bpy.data.node_groups["The Sims Renderer Pre Depth"]
         depth_group_node.location = (200, 0)
         depth_group_node.name = "The Sims Renderer Pre Depth"
@@ -204,91 +209,83 @@ def update(self, context):
         depth_group_node.width = 200
         render_layers = bpy.context.scene.node_tree.nodes.get("Render Layers")
         if render_layers is not None:
-            bpy.context.scene.node_tree.links.new(
-                render_layers.outputs[0], depth_group_node.inputs[0]
-            )
-            bpy.context.scene.node_tree.links.new(
-                render_layers.outputs[2], depth_group_node.inputs[1]
-            )
+            bpy.context.scene.node_tree.links.new(render_layers.outputs[0], depth_group_node.inputs[0])
+            bpy.context.scene.node_tree.links.new(render_layers.outputs[2], depth_group_node.inputs[1])
 
     group_node_tree = bpy.data.node_groups.get("The Sims Renderer")
     if group_node_tree is None:
-        group_node_tree = bpy.data.node_groups.new(
-            "The Sims Renderer", "CompositorNodeTree"
-        )
+        group_node_tree = bpy.data.node_groups.new("The Sims Renderer", 'CompositorNodeTree')
         group_node_tree.interface.new_socket(
             name="Image",
-            in_out="INPUT",
-            socket_type="NodeSocketColor",
+            in_out='INPUT',
+            socket_type='NodeSocketColor',
         )
         group_node_tree.interface.new_socket(
             name="Alpha",
-            in_out="INPUT",
-            socket_type="NodeSocketColor",
+            in_out='INPUT',
+            socket_type='NodeSocketColor',
         )
         group_node_tree.interface.new_socket(
             name="Depth",
-            in_out="INPUT",
-            socket_type="NodeSocketColor",
+            in_out='INPUT',
+            socket_type='NodeSocketColor',
         )
 
     input_node = group_node_tree.nodes.get("The Sims Input")
     if input_node is None:
-        input_node = group_node_tree.nodes.new("NodeGroupInput")
+        input_node = group_node_tree.nodes.new('NodeGroupInput')
         input_node.location = (0, 0)
         input_node.name = "The Sims Input"
         input_node.label = input_node.name
 
     alpha_convert_node = group_node_tree.nodes.get("The Sims Alpha Convert")
     if alpha_convert_node is None:
-        alpha_convert_node = group_node_tree.nodes.new(type="CompositorNodePremulKey")
+        alpha_convert_node = group_node_tree.nodes.new(type='CompositorNodePremulKey')
         alpha_convert_node.location = (156, 55)
         alpha_convert_node.name = "The Sims Alpha Convert"
         alpha_convert_node.label = alpha_convert_node.name
-        alpha_convert_node.mapping = "PREMUL_TO_STRAIGHT"
+        alpha_convert_node.mapping = 'PREMUL_TO_STRAIGHT'
 
     color_output_node = group_node_tree.nodes.get("The Sims Color Output")
     if color_output_node is None:
-        color_output_node = group_node_tree.nodes.new(type="CompositorNodeOutputFile")
+        color_output_node = group_node_tree.nodes.new(type='CompositorNodeOutputFile')
         color_output_node.location = (312, 105)
         color_output_node.name = "The Sims Color Output"
         color_output_node.label = color_output_node.name
-        color_output_node.format.file_format = "PNG"
-        color_output_node.format.color_mode = "RGB"
+        color_output_node.format.file_format = 'PNG'
+        color_output_node.format.color_mode = 'RGB'
         color_output_node.file_slots[0].path = "color"
-        group_node_tree.links.new(
-            alpha_convert_node.outputs[0], color_output_node.inputs[0]
-        )
+        group_node_tree.links.new(alpha_convert_node.outputs[0], color_output_node.inputs[0])
 
     alpha_output_node = group_node_tree.nodes.get("The Sims Alpha Output")
     if alpha_output_node is None:
-        alpha_output_node = group_node_tree.nodes.new(type="CompositorNodeOutputFile")
+        alpha_output_node = group_node_tree.nodes.new(type='CompositorNodeOutputFile')
         alpha_output_node.location = (312, 0)
         alpha_output_node.name = "The Sims Alpha Output"
         alpha_output_node.label = alpha_output_node.name
-        alpha_output_node.format.file_format = "OPEN_EXR"
-        alpha_output_node.format.color_mode = "RGB"
-        alpha_output_node.format.color_management = "OVERRIDE"
-        alpha_output_node.format.view_settings.view_transform = "Raw"
-        alpha_output_node.format.linear_colorspace_settings.name = "Non-Color"
+        alpha_output_node.format.file_format = 'OPEN_EXR'
+        alpha_output_node.format.color_mode = 'RGB'
+        alpha_output_node.format.color_management = 'OVERRIDE'
+        alpha_output_node.format.view_settings.view_transform = 'Raw'
+        alpha_output_node.format.linear_colorspace_settings.name = 'Non-Color'
         alpha_output_node.file_slots[0].path = "alpha"
 
     depth_output_node = group_node_tree.nodes.get("The Sims Depth Output")
     if depth_output_node is None:
-        depth_output_node = group_node_tree.nodes.new(type="CompositorNodeOutputFile")
+        depth_output_node = group_node_tree.nodes.new(type='CompositorNodeOutputFile')
         depth_output_node.location = (312, -105)
         depth_output_node.name = "The Sims Depth Output"
         depth_output_node.label = depth_output_node.name
-        depth_output_node.format.file_format = "OPEN_EXR"
-        depth_output_node.format.color_mode = "RGB"
-        depth_output_node.format.color_management = "OVERRIDE"
-        depth_output_node.format.view_settings.view_transform = "Raw"
-        depth_output_node.format.linear_colorspace_settings.name = "Non-Color"
+        depth_output_node.format.file_format = 'OPEN_EXR'
+        depth_output_node.format.color_mode = 'RGB'
+        depth_output_node.format.color_management = 'OVERRIDE'
+        depth_output_node.format.view_settings.view_transform = 'Raw'
+        depth_output_node.format.linear_colorspace_settings.name = 'Non-Color'
         depth_output_node.file_slots[0].path = "depth"
 
     group_node = bpy.context.scene.node_tree.nodes.get("The Sims Renderer")
     if group_node is None:
-        group_node = bpy.context.scene.node_tree.nodes.new("CompositorNodeGroup")
+        group_node = bpy.context.scene.node_tree.nodes.new('CompositorNodeGroup')
         group_node.node_tree = bpy.data.node_groups["The Sims Renderer"]
         group_node.location = (600, 0)
         group_node.name = "The Sims Renderer"
@@ -296,15 +293,9 @@ def update(self, context):
         group_node.width = 200
         render_layers = bpy.context.scene.node_tree.nodes.get("Render Layers")
         if render_layers is not None:
-            bpy.context.scene.node_tree.links.new(
-                render_layers.outputs[0], group_node.inputs[0]
-            )
-            bpy.context.scene.node_tree.links.new(
-                render_layers.outputs[1], group_node.inputs[1]
-            )
-        bpy.context.scene.node_tree.links.new(
-            depth_group_node.outputs[0], group_node.inputs[2]
-        )
+            bpy.context.scene.node_tree.links.new(render_layers.outputs[0], group_node.inputs[0])
+            bpy.context.scene.node_tree.links.new(render_layers.outputs[1], group_node.inputs[1])
+        bpy.context.scene.node_tree.links.new(depth_group_node.outputs[0], group_node.inputs[2])
 
     the_sims_collection = bpy.data.collections.get("The Sims")
     if the_sims_collection is None:
@@ -346,7 +337,7 @@ def update(self, context):
     camera.location = (DISTANCE_IN_TILES, -DISTANCE_IN_TILES, camera_height)
     camera.rotation_euler = (math.radians(60), 0, math.radians(45))
     camera.parent = rotation_origin
-    camera.data.type = "ORTHO"
+    camera.data.type = 'ORTHO'
     camera.data.clip_start = 5
     camera.data.clip_end = TILE_DIAGONAL_DISTANCE * DISTANCE_IN_TILES * 2
     camera.data.shift_x = 0
@@ -355,9 +346,7 @@ def update(self, context):
     object_bounds = context.scene.objects.get("The Sims Object Bounds")
     if object_bounds is None:
         object_bounds_mesh = bpy.data.meshes.new("The Sims Object Bounds")
-        object_bounds = bpy.data.objects.new(
-            "The Sims Object Bounds", object_bounds_mesh
-        )
+        object_bounds = bpy.data.objects.new("The Sims Object Bounds", object_bounds_mesh)
         the_sims_collection.objects.link(object_bounds)
         object_bounds.hide_select = True
         object_bounds.hide_set(True)
@@ -372,18 +361,18 @@ def update(self, context):
     object_bounds.dimensions = (context.scene.tsr_x, context.scene.tsr_y, 4)
 
 
-class tsr_setup(bpy.types.Operator):
+class TS1R_OT_setup(bpy.types.Operator):
     """Setup The Sims Renderer"""
 
-    bl_idname = "scene.tsr_setup"
+    bl_idname = "tsr.setup"
     bl_label = "Setup"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         context.scene.frame_start = 1
         context.scene.frame_end = 1
         update(self, context)
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 def render_color_and_alpha(context, direction, rotation, output_dir):
@@ -427,12 +416,8 @@ def render_rotation(context, direction, rotation, output_dir):
     border_max_y = 0
 
     for obj in context.view_layer.objects:
-        renderable_object_types = ["FONT", "MESH", "META", "SURFACE"]
-        if (
-            obj.hide_render is False
-            and obj.visible_camera is True
-            and obj.type in renderable_object_types
-        ):
+        renderable_object_types = ['FONT', 'MESH', 'META', 'SURFACE']
+        if obj.hide_render is False and obj.visible_camera and obj.type in renderable_object_types:
             vertices = [mathutils.Vector(vertex) for vertex in obj.bound_box]
             world_vertices = [obj.matrix_world @ vertex for vertex in vertices]
 
@@ -442,9 +427,7 @@ def render_rotation(context, direction, rotation, output_dir):
             object_max_y = 0
 
             for vertex in world_vertices:
-                view_coord = bpy_extras.object_utils.world_to_camera_view(
-                    context.scene, context.scene.camera, vertex
-                )
+                view_coord = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, vertex)
                 object_min_x = min(object_min_x, view_coord[0])
                 object_max_x = max(object_max_x, view_coord[0])
                 object_min_y = min(object_min_y, view_coord[1])
@@ -461,21 +444,15 @@ def render_rotation(context, direction, rotation, output_dir):
     context.scene.render.border_min_y = max(0, border_min_y - BORDER_PADDING)
     context.scene.render.border_max_y = min(1, border_max_y + BORDER_PADDING)
 
-    render_group_node_tree = context.scene.node_tree.nodes.get(
-        "The Sims Renderer"
-    ).node_tree
+    render_group_node_tree = context.scene.node_tree.nodes.get("The Sims Renderer").node_tree
     input_node = render_group_node_tree.nodes.get("The Sims Input")
     alpha_convert_node = render_group_node_tree.nodes.get("The Sims Alpha Convert")
     color_output_node = render_group_node_tree.nodes.get("The Sims Color Output")
     alpha_output_node = render_group_node_tree.nodes.get("The Sims Alpha Output")
-    depth_alpha_convert_node = render_group_node_tree.nodes.get(
-        "The Sims Depth Alpha Convert"
-    )
+    depth_alpha_convert_node = render_group_node_tree.nodes.get("The Sims Depth Alpha Convert")
     depth_output_node = render_group_node_tree.nodes.get("The Sims Depth Output")
 
-    depth_group_node_tree = context.scene.node_tree.nodes.get(
-        "The Sims Renderer Pre Depth"
-    ).node_tree
+    depth_group_node_tree = context.scene.node_tree.nodes.get("The Sims Renderer Pre Depth").node_tree
     depth_switch_node = depth_group_node_tree.nodes.get("The Sims Depth Switch")
 
     render_group_node_tree.links.new(input_node.outputs[2], depth_output_node.inputs[0])
@@ -534,9 +511,7 @@ def render_rotation(context, direction, rotation, output_dir):
     context.scene.cycles.filter_width = original_cycles_filter_width
     context.scene.cycles.max_bounces = original_cycles_max_bounces
 
-    render_group_node_tree.links.new(
-        input_node.outputs[0], alpha_convert_node.inputs[0]
-    )
+    render_group_node_tree.links.new(input_node.outputs[0], alpha_convert_node.inputs[0])
     render_group_node_tree.links.new(input_node.outputs[1], alpha_output_node.inputs[0])
 
     context.scene.render.resolution_percentage = 200
@@ -549,12 +524,8 @@ def render_rotation(context, direction, rotation, output_dir):
 
 
 def render_frames(context, object_name):
-    context.scene.tsr_frame_range_start = min(
-        context.scene.tsr_frame_range_start, context.scene.frame_start
-    )
-    context.scene.tsr_frame_range_end = max(
-        context.scene.tsr_frame_range_end, context.scene.frame_end
-    )
+    context.scene.tsr_frame_range_start = min(context.scene.tsr_frame_range_start, context.scene.frame_start)
+    context.scene.tsr_frame_range_end = max(context.scene.tsr_frame_range_end, context.scene.frame_end)
 
     for frame in range(context.scene.frame_start, context.scene.frame_end + 1):
         context.scene.frame_set(frame)
@@ -583,40 +554,30 @@ def render_frames(context, object_name):
 def is_gltf_variants_enabled(context):
     return (
         "io_scene_gltf2" in context.preferences.addons
-        and context.preferences.addons[
-            "io_scene_gltf2"
-        ].preferences.KHR_materials_variants_ui
+        and context.preferences.addons["io_scene_gltf2"].preferences.KHR_materials_variants_ui
     )
 
 
-def check_blender_file_is_saved(self, context):
-    if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
-        self.report({"ERROR"}, "Please save your blend file")
-        return False
-    return True
-
-
-class tsr_render(bpy.types.Operator):
+class TS1R_OT_render(bpy.types.Operator):
     """Render all frames in the current frame range"""
 
-    bl_idname = "scene.tsr_render"
+    bl_idname = "tsr.render"
     bl_label = "Render"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
         if context.scene.render.engine != "CYCLES":
-            self.report({"ERROR"}, "Rendering is only supported with Cycles")
-            return {"FINISHED"}
+            self.report({'ERROR'}, "Rendering is only supported with Cycles")
+            return {'FINISHED'}
 
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
 
         update(self, context)
 
         original_frame = context.scene.frame_current
-        original_rotation = copy.copy(
-            bpy.data.objects["The Sims Rotation Origin"].rotation_euler
-        )
+        original_rotation = copy.copy(bpy.data.objects["The Sims Rotation Origin"].rotation_euler)
         original_render_film_transparent = context.scene.render.film_transparent
         original_view_layer_use_pass_z = context.view_layer.use_pass_z
         original_camera = context.scene.camera
@@ -635,18 +596,14 @@ class tsr_render(bpy.types.Operator):
         context.scene.render.use_border = True
         context.scene.render.use_crop_to_border = False
 
-        tsr_set_render_resolution_and_camera.execute(self, context)
+        bpy.ops.tsr.set_render_resolution_and_camera()
 
         depth_override_material = bpy.data.materials.new(name="The Sims Depth Override")
         depth_override_material.use_nodes = True
-        depth_override_material.node_tree.nodes.remove(
-            depth_override_material.node_tree.nodes["Principled BSDF"]
-        )
+        depth_override_material.node_tree.nodes.remove(depth_override_material.node_tree.nodes["Principled BSDF"])
 
         if hasattr(bpy.app, "tsr_depth") is False:
-            camera_data_node = depth_override_material.node_tree.nodes.new(
-                type="ShaderNodeCameraData"
-            )
+            camera_data_node = depth_override_material.node_tree.nodes.new(type='ShaderNodeCameraData')
             depth_override_material.node_tree.links.new(
                 camera_data_node.outputs[1],
                 depth_override_material.node_tree.nodes["Material Output"].inputs[0],
@@ -654,16 +611,9 @@ class tsr_render(bpy.types.Operator):
 
         object_name = bpy.path.display_name_from_filepath(context.blend_data.filepath)
 
-        if (
-            is_gltf_variants_enabled(context)
-            and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-        ):
-            if context.scene.gltf2_active_variant >= len(
-                context.scene.gltf2_KHR_materials_variants_variants
-            ):
-                context.scene.gltf2_active_variant = (
-                    len(context.scene.gltf2_KHR_materials_variants_variants) - 1
-                )
+        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+            if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
+                context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
             original_variant = context.scene.gltf2_active_variant
 
@@ -699,10 +649,10 @@ class tsr_render(bpy.types.Operator):
 
         bpy.data.materials.remove(depth_override_material)
 
-        if context.scene.tsr_auto_split is True:
-            tsr_split.execute(self, context)
+        if context.scene.tsr_auto_split:
+            bpy.ops.tsr.split()
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
 def write_object_description(context):
@@ -715,9 +665,7 @@ def write_object_description(context):
     }
     frame_id_map = list()
 
-    for frame in range(
-        context.scene.tsr_frame_range_start, context.scene.tsr_frame_range_end + 1
-    ):
+    for frame in range(context.scene.tsr_frame_range_start, context.scene.tsr_frame_range_end + 1):
         context.scene.frame_set(frame)
         frame_name = "{}".format(frame)
         for marker in context.scene.timeline_markers:
@@ -752,10 +700,12 @@ def write_object_description(context):
 def split_frames(self, context, source_directory, object_name, variant):
     write_object_description(context)
 
+    compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
     if variant is None:
         result = subprocess.run(
             [
-                bpy.path.abspath(context.scene.tsr_compiler_path),
+                compiler_path,
                 "split",
                 source_directory,
                 object_name,
@@ -764,11 +714,11 @@ def split_frames(self, context, source_directory, object_name, variant):
             text=True,
         )
         if result.stderr != "":
-            self.report({"ERROR"}, result.stderr)
+            self.report({'ERROR'}, result.stderr)
     else:
         result = subprocess.run(
             [
-                bpy.path.abspath(context.scene.tsr_compiler_path),
+                compiler_path,
                 "split",
                 source_directory,
                 object_name,
@@ -779,35 +729,33 @@ def split_frames(self, context, source_directory, object_name, variant):
             text=True,
         )
         if result.stderr != "":
-            self.report({"ERROR"}, result.stderr)
+            self.report({'ERROR'}, result.stderr)
 
 
-class tsr_split(bpy.types.Operator):
+class TS1R_OT_split(bpy.types.Operator):
     """Split rendered images in to sprites"""
 
-    bl_idname = "scene.tsr_split"
+    bl_idname = "tsr.split"
     bl_label = "Split"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+        if os.path.isfile(compiler_path) is False:
+            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+            return {'FINISHED'}
 
         source_directory = bpy.path.abspath("//")
-        blender_file_name = bpy.path.display_name_from_filepath(
-            bpy.context.blend_data.filepath
-        )
+        blender_file_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
 
-        if (
-            is_gltf_variants_enabled(context)
-            and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-        ):
-            if context.scene.gltf2_active_variant >= len(
-                context.scene.gltf2_KHR_materials_variants_variants
-            ):
-                context.scene.gltf2_active_variant = (
-                    len(context.scene.gltf2_KHR_materials_variants_variants) - 1
-                )
+        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+            if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
+                context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
             for variant in context.scene.gltf2_KHR_materials_variants_variants:
                 if (
@@ -815,52 +763,52 @@ class tsr_split(bpy.types.Operator):
                     and variant.variant_idx != context.scene.gltf2_active_variant
                 ):
                     continue
-                split_frames(
-                    self, context, source_directory, blender_file_name, variant.name
-                )
+                split_frames(self, context, source_directory, blender_file_name, variant.name)
 
         else:
             split_frames(self, context, source_directory, blender_file_name, None)
 
-        if context.scene.tsr_auto_update_xml is True:
-            tsr_update_xml.execute(self, context)
+        if context.scene.tsr_auto_update_xml:
+            bpy.ops.tsr.update_xml()
 
-        elif context.scene.tsr_auto_compile is True:
+        elif context.scene.tsr_auto_compile:
             if context.scene.tsr_use_advanced_compile:
-                tsr_compile_advanced.execute(self, context)
+                bpy.ops.tsr.compile_advanced()
             else:
-                tsr_compile.execute(self, context)
+                bpy.ops.tsr.compile()
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_update_xml(bpy.types.Operator):
+class TS1R_OT_update_xml(bpy.types.Operator):
     """Update the object XML file with the split sprites"""
 
-    bl_idname = "scene.tsr_update_xml"
+    bl_idname = "tsr.update_xml"
     bl_label = "Update XML"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+        if os.path.isfile(compiler_path) is False:
+            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+            return {'FINISHED'}
 
         source_directory = bpy.path.abspath("//")
-        object_name = bpy.path.display_name_from_filepath(
-            bpy.context.blend_data.filepath
-        )
+        object_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
         variant_name = None
 
-        if (
-            is_gltf_variants_enabled(context)
-            and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-        ):
+        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
             variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
 
         if variant_name is None:
             result = subprocess.run(
                 [
-                    bpy.path.abspath(context.scene.tsr_compiler_path),
+                    compiler_path,
                     "update-xml",
                     source_directory,
                     object_name,
@@ -869,11 +817,11 @@ class tsr_update_xml(bpy.types.Operator):
                 text=True,
             )
             if result.stderr != "":
-                self.report({"ERROR"}, result.stderr)
+                self.report({'ERROR'}, result.stderr)
         else:
             result = subprocess.run(
                 [
-                    bpy.path.abspath(context.scene.tsr_compiler_path),
+                    compiler_path,
                     "update-xml",
                     source_directory,
                     object_name,
@@ -884,37 +832,42 @@ class tsr_update_xml(bpy.types.Operator):
                 text=True,
             )
             if result.stderr != "":
-                self.report({"ERROR"}, result.stderr)
+                self.report({'ERROR'}, result.stderr)
 
-        if context.scene.tsr_auto_compile is True:
+        if context.scene.tsr_auto_compile:
             if context.scene.tsr_use_advanced_compile:
-                tsr_compile_advanced.execute(self, context)
+                bpy.ops.tsr.compile_advanced()
             else:
-                tsr_compile.execute(self, context)
+                bpy.ops.tsr.compile()
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_compile(bpy.types.Operator):
+class TS1R_OT_compile(bpy.types.Operator):
     """Compile the xml file in to the final iff file"""
 
-    bl_idname = "scene.tsr_compile"
+    bl_idname = "tsr.compile"
     bl_label = "Compile"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+        if os.path.isfile(compiler_path) is False:
+            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+            return {'FINISHED'}
 
         source_directory = bpy.path.abspath("//")
-        blender_file_name = (
-            bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
-        )
+        blender_file_name = bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
         xml_file_path = os.path.join(source_directory, blender_file_name)
 
         result = subprocess.run(
             [
-                bpy.path.abspath(context.scene.tsr_compiler_path),
+                compiler_path,
                 "compile",
                 xml_file_path,
             ],
@@ -922,42 +875,42 @@ class tsr_compile(bpy.types.Operator):
             text=True,
         )
         if result.stderr != "":
-            self.report({"ERROR"}, result.stderr)
+            self.report({'ERROR'}, result.stderr)
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_compile_advanced(bpy.types.Operator):
+class TS1R_OT_compile_advanced(bpy.types.Operator):
     """Compile the xml file in to the final iff file"""
 
-    bl_idname = "scene.tsr_compile_advanced"
+    bl_idname = "tsr.compile_advanced"
     bl_label = "Compile"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+        if os.path.isfile(compiler_path) is False:
+            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+            return {'FINISHED'}
 
         if context.scene.tsr_creator_name == "":
-            self.report({"ERROR"}, "Please enter your name")
-            return {"FINISHED"}
+            self.report({'ERROR'}, "Please enter your name")
+            return {'FINISHED'}
 
         if context.scene.tsr_format_string == "":
-            self.report({"ERROR"}, "Please enter a formatting string")
-            return {"FINISHED"}
+            self.report({'ERROR'}, "Please enter a formatting string")
+            return {'FINISHED'}
 
         source_directory = bpy.path.abspath("//")
 
-        if (
-            is_gltf_variants_enabled(context)
-            and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-        ):
-            if context.scene.gltf2_active_variant >= len(
-                context.scene.gltf2_KHR_materials_variants_variants
-            ):
-                context.scene.gltf2_active_variant = (
-                    len(context.scene.gltf2_KHR_materials_variants_variants) - 1
-                )
+        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+            if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
+                context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
             for variant in context.scene.gltf2_KHR_materials_variants_variants:
                 if (
@@ -966,20 +919,16 @@ class tsr_compile_advanced(bpy.types.Operator):
                 ):
                     continue
 
-                first_variant_name = (
-                    context.scene.gltf2_KHR_materials_variants_variants[0].name
-                )
+                first_variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
 
                 result = subprocess.run(
                     [
-                        bpy.path.abspath(context.scene.tsr_compiler_path),
+                        compiler_path,
                         "compile-advanced",
                         source_directory,
                         context.scene.tsr_format_string,
                         context.scene.tsr_creator_name,
-                        bpy.path.display_name_from_filepath(
-                            context.blend_data.filepath
-                        ),
+                        bpy.path.display_name_from_filepath(context.blend_data.filepath),
                         first_variant_name,
                         variant.name,
                     ],
@@ -987,11 +936,11 @@ class tsr_compile_advanced(bpy.types.Operator):
                     text=True,
                 )
                 if result.stderr != "":
-                    self.report({"ERROR"}, result.stderr)
+                    self.report({'ERROR'}, result.stderr)
         else:
             result = subprocess.run(
                 [
-                    bpy.path.abspath(context.scene.tsr_compiler_path),
+                    compiler_path,
                     "compile-advanced",
                     source_directory,
                     context.scene.tsr_format_string,
@@ -1002,31 +951,36 @@ class tsr_compile_advanced(bpy.types.Operator):
                 text=True,
             )
             if result.stderr != "":
-                self.report({"ERROR"}, result.stderr)
+                self.report({'ERROR'}, result.stderr)
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class tsr_add_rotations(bpy.types.Operator):
+class TS1R_OT_add_rotations(bpy.types.Operator):
     """Add all 4 rotations to the draw groups in the object's XML file"""
 
-    bl_idname = "scene.tsr_add_rotations"
+    bl_idname = "tsr.add_rotations"
     bl_label = "Add Rotations"
-    bl_options = {"REGISTER"}
+    bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if check_blender_file_is_saved(self, context) is False:
-            return {"FINISHED"}
+        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+            self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+        if os.path.isfile(compiler_path) is False:
+            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+            return {'FINISHED'}
 
         source_directory = bpy.path.abspath("//")
-        blender_file_name = (
-            bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
-        )
+        blender_file_name = bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
         xml_file_path = os.path.join(source_directory, blender_file_name)
 
         result = subprocess.run(
             [
-                bpy.path.abspath(context.scene.tsr_compiler_path),
+                compiler_path,
                 "add-rotations",
                 xml_file_path,
             ],
@@ -1035,14 +989,14 @@ class tsr_add_rotations(bpy.types.Operator):
         )
         if result.stdout != "":
             for line in result.stdout.splitlines():
-                self.report({"INFO"}, line)
+                self.report({'INFO'}, line)
         if result.stderr != "":
-            self.report({"ERROR"}, result.stderr)
+            self.report({'ERROR'}, result.stderr)
 
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
-class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
+class TS1R_PT_the_sims_renderer_panel(bpy.types.Panel):
     bl_label = "The Sims Renderer"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -1059,15 +1013,7 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
 
         if context.scene.objects.get("The Sims Rotation Origin") is None:
             setup_button = self.layout.column(align=True)
-            setup_button.operator("scene.tsr_setup", text="Setup")
-            return
-
-        compiler_path = self.layout.column(align=True)
-        if context.scene.tsr_compiler_path == "":
-            compiler_path.label(text="Compiler path:")
-        compiler_path.prop(context.scene, "tsr_compiler_path")
-
-        if os.path.isfile(bpy.path.abspath(context.scene.tsr_compiler_path)) is False:
+            setup_button.operator("tsr.setup", text="Setup")
             return
 
         dimensions = self.layout.split(align=True)
@@ -1076,15 +1022,15 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
 
         set_resolution_and_camera_button = self.layout.column(align=True)
         set_resolution_and_camera_button.operator(
-            "scene.tsr_set_render_resolution_and_camera",
+            "tsr.set_render_resolution_and_camera",
             text="Set resolution and camera",
         )
 
         compass = self.layout.grid_flow(align=True, columns=2, row_major=True)
-        compass.operator("scene.tsr_set_view_north_west", text="NW")
-        compass.operator("scene.tsr_set_view_north_east", text="NE")
-        compass.operator("scene.tsr_set_view_south_west", text="SW")
-        compass.operator("scene.tsr_set_view_south_east", text="SE")
+        compass.operator("tsr.set_view_north_west", text="NW")
+        compass.operator("tsr.set_view_north_east", text="NE")
+        compass.operator("tsr.set_view_south_west", text="SW")
+        compass.operator("tsr.set_view_south_east", text="SE")
 
         render_compass = self.layout.grid_flow(align=True, columns=2, row_major=True)
         render_compass.prop(context.scene, "tsr_render_nw")
@@ -1093,7 +1039,7 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
         render_compass.prop(context.scene, "tsr_render_se")
 
         add_rotations = self.layout.column()
-        add_rotations.operator("scene.tsr_add_rotations", text="Add Rotations")
+        add_rotations.operator("tsr.add_rotations", text="Add Rotations")
 
         sprite_id_box = self.layout.box()
 
@@ -1109,31 +1055,31 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
 
         frame_range = self.layout.column(align=True)
         frame_range.prop(context.scene, "tsr_frame_range_start")
-        frame_range.prop(context.scene, "tsr_frame_range_end",)
+        frame_range.prop(
+            context.scene,
+            "tsr_frame_range_end",
+        )
 
-        if (
-            is_gltf_variants_enabled(context)
-            and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-        ):
+        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
             render_all_variants = self.layout.column(align=True)
             render_all_variants.prop(context.scene, "tsr_render_all_variants")
 
         render_button = self.layout.column(align=True)
-        render_button.operator("scene.tsr_render", text="Render")
+        render_button.operator("tsr.render", text="Render")
 
         split = self.layout.split(factor=0.7)
-        split.operator("scene.tsr_split", text="Split")
+        split.operator("tsr.split", text="Split")
         split.prop(context.scene, "tsr_auto_split", text="Auto")
 
         update = self.layout.split(factor=0.7)
-        update.operator("scene.tsr_update_xml", text="Update XML")
+        update.operator("tsr.update_xml", text="Update XML")
         update.prop(context.scene, "tsr_auto_update_xml", text="Auto")
 
         compile_button = self.layout.split(factor=0.7)
         if context.scene.tsr_use_advanced_compile:
-            compile_button.operator("scene.tsr_compile_advanced", text="Compile")
+            compile_button.operator("tsr.compile_advanced", text="Compile")
         else:
-            compile_button.operator("scene.tsr_compile", text="Compile")
+            compile_button.operator("tsr.compile", text="Compile")
         compile_button.prop(context.scene, "tsr_auto_compile", text="Auto")
 
         advanced_compile_box = self.layout.box()
@@ -1149,10 +1095,7 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
             format_string.label(text="Format string:")
             format_string.prop(context.scene, "tsr_format_string")
 
-            if (
-                is_gltf_variants_enabled(context)
-                and len(context.scene.gltf2_KHR_materials_variants_variants) > 0
-            ):
+            if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
                 compile_all_variants = advanced_compile_box.column(align=True)
                 compile_all_variants.prop(context.scene, "tsr_compile_all_variants")
 
@@ -1161,20 +1104,27 @@ class TSR_PT_TheSimsRendererPanel(bpy.types.Panel):
                 bpy.types.SCENE_PT_gltf2_variants.draw(self, context)
 
 
+classes = (
+    TS1R_addon_preferences,
+    TS1R_OT_setup,
+    TS1R_OT_set_view_north_west,
+    TS1R_OT_set_view_north_east,
+    TS1R_OT_set_view_south_east,
+    TS1R_OT_set_view_south_west,
+    TS1R_OT_set_render_resolution_and_camera,
+    TS1R_OT_render,
+    TS1R_OT_split,
+    TS1R_OT_update_xml,
+    TS1R_OT_compile,
+    TS1R_OT_compile_advanced,
+    TS1R_OT_add_rotations,
+    TS1R_PT_the_sims_renderer_panel,
+)
+
+
 def register():
-    bpy.utils.register_class(tsr_setup)
-    bpy.utils.register_class(tsr_set_view_north_west)
-    bpy.utils.register_class(tsr_set_view_north_east)
-    bpy.utils.register_class(tsr_set_view_south_east)
-    bpy.utils.register_class(tsr_set_view_south_west)
-    bpy.utils.register_class(tsr_set_render_resolution_and_camera)
-    bpy.utils.register_class(tsr_render)
-    bpy.utils.register_class(tsr_split)
-    bpy.utils.register_class(tsr_update_xml)
-    bpy.utils.register_class(tsr_compile)
-    bpy.utils.register_class(tsr_compile_advanced)
-    bpy.utils.register_class(tsr_add_rotations)
-    bpy.utils.register_class(TSR_PT_TheSimsRendererPanel)
+    for c in classes:
+        bpy.utils.register_class(c)
 
     bpy.types.Scene.tsr_x = bpy.props.IntProperty(
         name="X Dimension",
@@ -1271,13 +1221,6 @@ def register():
         options=set(),
     )
 
-    bpy.types.Scene.tsr_compiler_path = bpy.props.StringProperty(
-        name="",
-        description="Path to the compiler program",
-        default="",
-        options=set(),
-    )
-
     bpy.types.Scene.tsr_use_advanced_compile = bpy.props.BoolProperty(
         name="Advanced Compile",
         description="Use the compilers advanced setting, allowing color variants",
@@ -1314,19 +1257,8 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(TSR_PT_TheSimsRendererPanel)
-    bpy.utils.unregister_class(tsr_add_rotations)
-    bpy.utils.unregister_class(tsr_compile_advanced)
-    bpy.utils.unregister_class(tsr_compile)
-    bpy.utils.unregister_class(tsr_update_xml)
-    bpy.utils.unregister_class(tsr_split)
-    bpy.utils.unregister_class(tsr_render)
-    bpy.utils.unregister_class(tsr_set_render_resolution_and_camera)
-    bpy.utils.unregister_class(tsr_set_view_south_west)
-    bpy.utils.unregister_class(tsr_set_view_south_east)
-    bpy.utils.unregister_class(tsr_set_view_north_east)
-    bpy.utils.unregister_class(tsr_set_view_north_west)
-    bpy.utils.unregister_class(tsr_setup)
+    for c in classes:
+        bpy.utils.unregister_class(c)
 
     del bpy.types.Scene.tsr_x
     del bpy.types.Scene.tsr_y
@@ -1348,8 +1280,6 @@ def unregister():
     del bpy.types.Scene.tsr_auto_split
     del bpy.types.Scene.tsr_auto_update_xml
     del bpy.types.Scene.tsr_auto_compile
-
-    del bpy.types.Scene.tsr_compiler_path
 
     del bpy.types.Scene.tsr_use_advanced_compile
 

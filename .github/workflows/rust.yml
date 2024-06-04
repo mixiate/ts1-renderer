@@ -15,7 +15,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.6
+      with:
+        type: "zip"
+        path: "addons/render_ts1"
+        filename: "${{github.event.repository.name}}-${{github.ref_name}}.zip"
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
-        files: ts1-renderer.py
+        files: "${{github.event.repository.name}}-${{github.ref_name}}.zip"
