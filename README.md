@@ -20,3 +20,6 @@ TS1 Renderer combined with TS1 Compiler has many features, here are some of them
 - Render frames of animation using any of Blenders animation features
 - Feature to automatically add sprites for all 4 rotations to most objects
 - Render and create new objects automatically for different colors or materials
+
+### You may be interested in
+- [TS1 Blender IO](https://github.com/mixiate/ts1-blender-io) - Import and export The Sims 1 models and animations with Blender.
