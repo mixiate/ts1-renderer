@@ -2,7 +2,7 @@ bl_info = {
     "name": "The Sims 1 Renderer",
     "description": "Renders sprites for The Sims 1. To be used with the TS1 Compiler.",
     "author": "mix",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (4, 1, 0),
     "location": "View3D > Sidebar > The Sims Tab",
     "warning": "",
@@ -39,6 +39,13 @@ class TS1R_addon_preferences(bpy.types.AddonPreferences):
 
     bl_idname = __name__
 
+    the_sims_path: bpy.props.StringProperty(
+        name="The Sims Path",
+        description="Path to the The Sims",
+        subtype='FILE_PATH',
+        default="",
+    )
+
     compiler_path: bpy.props.StringProperty(
         name="TS1 Compiler Path",
         description="Path to the TS1 Compiler",
@@ -48,6 +55,7 @@ class TS1R_addon_preferences(bpy.types.AddonPreferences):
 
     def draw(self, _: bpy.context) -> None:
         """Draw the addon preferences ui."""
+        self.layout.prop(self, "the_sims_path")
         self.layout.prop(self, "compiler_path")
 
 
@@ -855,6 +863,12 @@ class TS1R_OT_compile(bpy.types.Operator):
             self.report({'ERROR'}, "Please save your blend file")
             return {'FINISHED'}
 
+        the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
+
+        if os.path.isdir(the_sims_path) is False:
+            self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
+            return {'FINISHED'}
+
         compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
 
         if os.path.isfile(compiler_path) is False:
@@ -869,6 +883,7 @@ class TS1R_OT_compile(bpy.types.Operator):
             [
                 compiler_path,
                 "compile",
+                the_sims_path,
                 xml_file_path,
             ],
             capture_output=True,
@@ -890,6 +905,12 @@ class TS1R_OT_compile_advanced(bpy.types.Operator):
     def execute(self, context):
         if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
             self.report({'ERROR'}, "Please save your blend file")
+            return {'FINISHED'}
+
+        the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
+
+        if os.path.isdir(the_sims_path) is False:
+            self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
             return {'FINISHED'}
 
         compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
@@ -925,6 +946,7 @@ class TS1R_OT_compile_advanced(bpy.types.Operator):
                     [
                         compiler_path,
                         "compile-advanced",
+                        the_sims_path,
                         source_directory,
                         context.scene.tsr_format_string,
                         context.scene.tsr_creator_name,
@@ -942,6 +964,7 @@ class TS1R_OT_compile_advanced(bpy.types.Operator):
                 [
                     compiler_path,
                     "compile-advanced",
+                    the_sims_path,
                     source_directory,
                     context.scene.tsr_format_string,
                     context.scene.tsr_creator_name,
