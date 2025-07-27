@@ -823,6 +823,8 @@ def update_xml(self, context):
     if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
         variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
 
+    auto_continue = True
+
     if variant_name is None:
         result = subprocess.run(
             [
@@ -836,6 +838,7 @@ def update_xml(self, context):
         )
         if result.stderr != "":
             self.report({'ERROR'}, result.stderr)
+            auto_continue = False
     else:
         result = subprocess.run(
             [
@@ -851,8 +854,9 @@ def update_xml(self, context):
         )
         if result.stderr != "":
             self.report({'ERROR'}, result.stderr)
+            auto_continue = False
 
-    if context.scene.tsr_auto_compile:
+    if context.scene.tsr_auto_compile and auto_continue:
         if context.scene.tsr_use_advanced_compile:
             bpy.ops.tsr.compile_advanced()
         else:
