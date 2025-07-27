@@ -789,7 +789,7 @@ def split(self, context):
         if context.scene.tsr_use_advanced_compile:
             bpy.ops.tsr.compile_advanced()
         else:
-            bpy.ops.tsr.compile()
+            compile(self, context)
 
 
 class TS1R_OT_split(bpy.types.Operator):
@@ -860,7 +860,7 @@ def update_xml(self, context):
         if context.scene.tsr_use_advanced_compile:
             bpy.ops.tsr.compile_advanced()
         else:
-            bpy.ops.tsr.compile()
+            compile(self, context)
 
 
 class TS1R_OT_update_xml(bpy.types.Operator):
@@ -876,6 +876,41 @@ class TS1R_OT_update_xml(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def compile(self, context):
+    if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+        self.report({'ERROR'}, "Please save your blend file")
+        return {'FINISHED'}
+
+    the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
+
+    if os.path.isdir(the_sims_path) is False:
+        self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
+        return {'FINISHED'}
+
+    compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+    if os.path.isfile(compiler_path) is False:
+        self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+        return {'FINISHED'}
+
+    source_directory = bpy.path.abspath("//")
+    blender_file_name = bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
+    xml_file_path = os.path.join(source_directory, blender_file_name)
+
+    result = subprocess.run(
+        [
+            compiler_path,
+            "compile",
+            the_sims_path,
+            xml_file_path,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.stderr != "":
+        self.report({'ERROR'}, result.stderr)
+
+
 class TS1R_OT_compile(bpy.types.Operator):
     """Compile the xml file in to the final iff file"""
 
@@ -884,38 +919,7 @@ class TS1R_OT_compile(bpy.types.Operator):
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
-            self.report({'ERROR'}, "Please save your blend file")
-            return {'FINISHED'}
-
-        the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
-
-        if os.path.isdir(the_sims_path) is False:
-            self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
-            return {'FINISHED'}
-
-        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
-
-        if os.path.isfile(compiler_path) is False:
-            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
-            return {'FINISHED'}
-
-        source_directory = bpy.path.abspath("//")
-        blender_file_name = bpy.path.display_name_from_filepath(context.blend_data.filepath) + ".xml"
-        xml_file_path = os.path.join(source_directory, blender_file_name)
-
-        result = subprocess.run(
-            [
-                compiler_path,
-                "compile",
-                the_sims_path,
-                xml_file_path,
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+        compile(self, context)
 
         return {'FINISHED'}
 
