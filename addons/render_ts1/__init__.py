@@ -630,7 +630,7 @@ class TS1R_OT_render(bpy.types.Operator):
 
             for variant in context.scene.gltf2_KHR_materials_variants_variants:
                 if (
-                    context.scene.tsr_render_all_variants == False
+                    not context.scene.tsr_render_all_variants
                     and variant.variant_idx != context.scene.gltf2_active_variant
                 ):
                     continue
@@ -768,10 +768,7 @@ def split(self, context):
             context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
         for variant in context.scene.gltf2_KHR_materials_variants_variants:
-            if (
-                context.scene.tsr_render_all_variants == False
-                and variant.variant_idx != context.scene.gltf2_active_variant
-            ):
+            if not context.scene.tsr_render_all_variants and variant.variant_idx != context.scene.gltf2_active_variant:
                 continue
             result = split_frames(self, context, source_directory, blender_file_name, variant.name)
             if not result:
@@ -956,10 +953,7 @@ def compile_advanced(self, context):
             context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
         for variant in context.scene.gltf2_KHR_materials_variants_variants:
-            if (
-                context.scene.tsr_compile_all_variants == False
-                and variant.variant_idx != context.scene.gltf2_active_variant
-            ):
+            if not context.scene.tsr_compile_all_variants and variant.variant_idx != context.scene.gltf2_active_variant:
                 continue
 
             first_variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
