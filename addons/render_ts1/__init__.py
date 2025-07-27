@@ -460,7 +460,6 @@ def render_rotation(context, direction, rotation, output_dir):
     alpha_convert_node = render_group_node_tree.nodes.get("The Sims Alpha Convert")
     color_output_node = render_group_node_tree.nodes.get("The Sims Color Output")
     alpha_output_node = render_group_node_tree.nodes.get("The Sims Alpha Output")
-    depth_alpha_convert_node = render_group_node_tree.nodes.get("The Sims Depth Alpha Convert")
     depth_output_node = render_group_node_tree.nodes.get("The Sims Depth Output")
 
     depth_group_node_tree = context.scene.node_tree.nodes.get("The Sims Renderer Pre Depth").node_tree
@@ -475,8 +474,6 @@ def render_rotation(context, direction, rotation, output_dir):
     color_output_node.base_path = output_dir_relative
     alpha_output_node.base_path = output_dir_relative
     depth_output_node.base_path = output_dir_relative
-
-    original_eevee_filter_width = context.scene.render.filter_size
 
     original_cycles_max_bounces = context.scene.cycles.max_bounces
     context.scene.cycles.max_bounces = 0
