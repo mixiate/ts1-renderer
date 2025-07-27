@@ -441,10 +441,13 @@ def render_rotation(context, direction, rotation, output_dir):
                 object_min_y = min(object_min_y, view_coord[1])
                 object_max_y = max(object_max_y, view_coord[1])
 
-            border_min_x = min(border_min_x, object_min_x)
-            border_max_x = max(border_max_x, object_max_x)
-            border_min_y = min(border_min_y, object_min_y)
-            border_max_y = max(border_max_y, object_max_y)
+            border_min_x = max(0, min(border_min_x, object_min_x))
+            border_max_x = min(1, max(border_max_x, object_max_x))
+            border_min_y = max(0, min(border_min_y, object_min_y))
+            border_max_y = min(1, max(border_max_y, object_max_y))
+
+    if border_min_x >= border_max_x or border_min_y >= border_max_y:
+        return
 
     BORDER_PADDING = 0.01
     context.scene.render.border_min_x = max(0, border_min_x - BORDER_PADDING)
