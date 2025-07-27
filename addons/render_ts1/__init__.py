@@ -575,7 +575,7 @@ class TS1R_OT_render(bpy.types.Operator):
 
     def execute(self, context):
         if context.scene.render.engine != "CYCLES":
-            self.report({'ERROR'}, "Rendering is only supported with Cycles")
+            self.report({'ERROR'}, "[Render] Rendering is only supported with Cycles")
             return {'FINISHED'}
 
         if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
@@ -722,7 +722,7 @@ def split_frames(self, context, source_directory, object_name, variant):
             text=True,
         )
         if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+            self.report({'ERROR'}, "[Split] " + result.stderr)
             return False
     else:
         result = subprocess.run(
@@ -738,7 +738,7 @@ def split_frames(self, context, source_directory, object_name, variant):
             text=True,
         )
         if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+            self.report({'ERROR'}, "[Split] " + result.stderr)
             return False
 
     return True
@@ -831,7 +831,7 @@ def update_xml(self, context):
             text=True,
         )
         if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+            self.report({'ERROR'}, "[Update XML] " + result.stderr)
             auto_continue = False
     else:
         result = subprocess.run(
@@ -847,7 +847,7 @@ def update_xml(self, context):
             text=True,
         )
         if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+            self.report({'ERROR'}, "[Update XML] " + result.stderr)
             auto_continue = False
 
     if context.scene.tsr_auto_compile and auto_continue:
@@ -902,7 +902,7 @@ def compile(self, context):
         text=True,
     )
     if result.stderr != "":
-        self.report({'ERROR'}, result.stderr)
+        self.report({'ERROR'}, "[Compile] " + result.stderr)
 
 
 class TS1R_OT_compile(bpy.types.Operator):
@@ -936,11 +936,11 @@ def compile_advanced(self, context):
         return {'FINISHED'}
 
     if context.scene.tsr_creator_name == "":
-        self.report({'ERROR'}, "Please enter your name")
+        self.report({'ERROR'}, "[Compile] Please enter your name")
         return {'FINISHED'}
 
     if context.scene.tsr_format_string == "":
-        self.report({'ERROR'}, "Please enter a formatting string")
+        self.report({'ERROR'}, "[Compile] Please enter a formatting string")
         return {'FINISHED'}
 
     source_directory = bpy.path.abspath("//")
@@ -971,7 +971,7 @@ def compile_advanced(self, context):
                 text=True,
             )
             if result.stderr != "":
-                self.report({'ERROR'}, result.stderr)
+                self.report({'ERROR'}, "[Compile] " + result.stderr)
     else:
         result = subprocess.run(
             [
@@ -987,7 +987,7 @@ def compile_advanced(self, context):
             text=True,
         )
         if result.stderr != "":
-            self.report({'ERROR'}, result.stderr)
+            self.report({'ERROR'}, "[Compile] " + result.stderr)
 
 
 class TS1R_OT_compile_advanced(bpy.types.Operator):
