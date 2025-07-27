@@ -787,7 +787,7 @@ def split(self, context):
 
     elif context.scene.tsr_auto_compile and auto_continue:
         if context.scene.tsr_use_advanced_compile:
-            bpy.ops.tsr.compile_advanced()
+            compile_advanced(self, context)
         else:
             compile(self, context)
 
@@ -858,7 +858,7 @@ def update_xml(self, context):
 
     if context.scene.tsr_auto_compile and auto_continue:
         if context.scene.tsr_use_advanced_compile:
-            bpy.ops.tsr.compile_advanced()
+            compile_advanced(self, context)
         else:
             compile(self, context)
 
@@ -924,71 +924,46 @@ class TS1R_OT_compile(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TS1R_OT_compile_advanced(bpy.types.Operator):
-    """Compile the xml file in to the final iff file"""
+def compile_advanced(self, context):
+    if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+        self.report({'ERROR'}, "Please save your blend file")
+        return {'FINISHED'}
 
-    bl_idname = "tsr.compile_advanced"
-    bl_label = "Compile"
-    bl_options = {'REGISTER'}
+    the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
 
-    def execute(self, context):
-        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
-            self.report({'ERROR'}, "Please save your blend file")
-            return {'FINISHED'}
+    if os.path.isdir(the_sims_path) is False:
+        self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
+        return {'FINISHED'}
 
-        the_sims_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.the_sims_path)
+    compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
 
-        if os.path.isdir(the_sims_path) is False:
-            self.report({'ERROR'}, "Please set the path to The Sims in the add-on preferences")
-            return {'FINISHED'}
+    if os.path.isfile(compiler_path) is False:
+        self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+        return {'FINISHED'}
 
-        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+    if context.scene.tsr_creator_name == "":
+        self.report({'ERROR'}, "Please enter your name")
+        return {'FINISHED'}
 
-        if os.path.isfile(compiler_path) is False:
-            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
-            return {'FINISHED'}
+    if context.scene.tsr_format_string == "":
+        self.report({'ERROR'}, "Please enter a formatting string")
+        return {'FINISHED'}
 
-        if context.scene.tsr_creator_name == "":
-            self.report({'ERROR'}, "Please enter your name")
-            return {'FINISHED'}
+    source_directory = bpy.path.abspath("//")
 
-        if context.scene.tsr_format_string == "":
-            self.report({'ERROR'}, "Please enter a formatting string")
-            return {'FINISHED'}
+    if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+        if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
+            context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
 
-        source_directory = bpy.path.abspath("//")
+        for variant in context.scene.gltf2_KHR_materials_variants_variants:
+            if (
+                context.scene.tsr_compile_all_variants == False
+                and variant.variant_idx != context.scene.gltf2_active_variant
+            ):
+                continue
 
-        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
-            if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
-                context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
+            first_variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
 
-            for variant in context.scene.gltf2_KHR_materials_variants_variants:
-                if (
-                    context.scene.tsr_compile_all_variants == False
-                    and variant.variant_idx != context.scene.gltf2_active_variant
-                ):
-                    continue
-
-                first_variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
-
-                result = subprocess.run(
-                    [
-                        compiler_path,
-                        "compile-advanced",
-                        the_sims_path,
-                        source_directory,
-                        context.scene.tsr_format_string,
-                        context.scene.tsr_creator_name,
-                        bpy.path.display_name_from_filepath(context.blend_data.filepath),
-                        first_variant_name,
-                        variant.name,
-                    ],
-                    capture_output=True,
-                    text=True,
-                )
-                if result.stderr != "":
-                    self.report({'ERROR'}, result.stderr)
-        else:
             result = subprocess.run(
                 [
                     compiler_path,
@@ -998,12 +973,41 @@ class TS1R_OT_compile_advanced(bpy.types.Operator):
                     context.scene.tsr_format_string,
                     context.scene.tsr_creator_name,
                     bpy.path.display_name_from_filepath(context.blend_data.filepath),
+                    first_variant_name,
+                    variant.name,
                 ],
                 capture_output=True,
                 text=True,
             )
             if result.stderr != "":
                 self.report({'ERROR'}, result.stderr)
+    else:
+        result = subprocess.run(
+            [
+                compiler_path,
+                "compile-advanced",
+                the_sims_path,
+                source_directory,
+                context.scene.tsr_format_string,
+                context.scene.tsr_creator_name,
+                bpy.path.display_name_from_filepath(context.blend_data.filepath),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.stderr != "":
+            self.report({'ERROR'}, result.stderr)
+
+
+class TS1R_OT_compile_advanced(bpy.types.Operator):
+    """Compile the xml file in to the final iff file"""
+
+    bl_idname = "tsr.compile_advanced"
+    bl_label = "Compile"
+    bl_options = {'REGISTER'}
+
+    def execute(self, context):
+        compile_advanced(self, context)
 
         return {'FINISHED'}
 
