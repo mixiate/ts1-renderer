@@ -726,6 +726,7 @@ def split_frames(self, context, source_directory, object_name, variant):
         )
         if result.stderr != "":
             self.report({'ERROR'}, result.stderr)
+            return False
     else:
         result = subprocess.run(
             [
@@ -741,6 +742,9 @@ def split_frames(self, context, source_directory, object_name, variant):
         )
         if result.stderr != "":
             self.report({'ERROR'}, result.stderr)
+            return False
+
+    return True
 
 
 def split(self, context):
@@ -757,6 +761,8 @@ def split(self, context):
     source_directory = bpy.path.abspath("//")
     blender_file_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
 
+    auto_continue = True
+
     if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
         if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
             context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
@@ -767,15 +773,19 @@ def split(self, context):
                 and variant.variant_idx != context.scene.gltf2_active_variant
             ):
                 continue
-            split_frames(self, context, source_directory, blender_file_name, variant.name)
+            result = split_frames(self, context, source_directory, blender_file_name, variant.name)
+            if not result:
+                auto_continue = False
 
     else:
-        split_frames(self, context, source_directory, blender_file_name, None)
+        result = split_frames(self, context, source_directory, blender_file_name, None)
+        if not result:
+            auto_continue = False
 
-    if context.scene.tsr_auto_update_xml:
+    if context.scene.tsr_auto_update_xml and auto_continue:
         bpy.ops.tsr.update_xml()
 
-    elif context.scene.tsr_auto_compile:
+    elif context.scene.tsr_auto_compile and auto_continue:
         if context.scene.tsr_use_advanced_compile:
             bpy.ops.tsr.compile_advanced()
         else:
