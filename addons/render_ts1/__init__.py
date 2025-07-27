@@ -661,7 +661,7 @@ class TS1R_OT_render(bpy.types.Operator):
         bpy.data.materials.remove(depth_override_material)
 
         if context.scene.tsr_auto_split:
-            bpy.ops.tsr.split()
+            split(self, context)
 
         return {'FINISHED'}
 
@@ -743,6 +743,45 @@ def split_frames(self, context, source_directory, object_name, variant):
             self.report({'ERROR'}, result.stderr)
 
 
+def split(self, context):
+    if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+        self.report({'ERROR'}, "Please save your blend file")
+        return {'FINISHED'}
+
+    compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+    if os.path.isfile(compiler_path) is False:
+        self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+        return {'FINISHED'}
+
+    source_directory = bpy.path.abspath("//")
+    blender_file_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
+
+    if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+        if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
+            context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
+
+        for variant in context.scene.gltf2_KHR_materials_variants_variants:
+            if (
+                context.scene.tsr_render_all_variants == False
+                and variant.variant_idx != context.scene.gltf2_active_variant
+            ):
+                continue
+            split_frames(self, context, source_directory, blender_file_name, variant.name)
+
+    else:
+        split_frames(self, context, source_directory, blender_file_name, None)
+
+    if context.scene.tsr_auto_update_xml:
+        bpy.ops.tsr.update_xml()
+
+    elif context.scene.tsr_auto_compile:
+        if context.scene.tsr_use_advanced_compile:
+            bpy.ops.tsr.compile_advanced()
+        else:
+            bpy.ops.tsr.compile()
+
+
 class TS1R_OT_split(bpy.types.Operator):
     """Split rendered images in to sprites"""
 
@@ -751,42 +790,7 @@ class TS1R_OT_split(bpy.types.Operator):
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
-            self.report({'ERROR'}, "Please save your blend file")
-            return {'FINISHED'}
-
-        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
-
-        if os.path.isfile(compiler_path) is False:
-            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
-            return {'FINISHED'}
-
-        source_directory = bpy.path.abspath("//")
-        blender_file_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
-
-        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
-            if context.scene.gltf2_active_variant >= len(context.scene.gltf2_KHR_materials_variants_variants):
-                context.scene.gltf2_active_variant = len(context.scene.gltf2_KHR_materials_variants_variants) - 1
-
-            for variant in context.scene.gltf2_KHR_materials_variants_variants:
-                if (
-                    context.scene.tsr_render_all_variants == False
-                    and variant.variant_idx != context.scene.gltf2_active_variant
-                ):
-                    continue
-                split_frames(self, context, source_directory, blender_file_name, variant.name)
-
-        else:
-            split_frames(self, context, source_directory, blender_file_name, None)
-
-        if context.scene.tsr_auto_update_xml:
-            bpy.ops.tsr.update_xml()
-
-        elif context.scene.tsr_auto_compile:
-            if context.scene.tsr_use_advanced_compile:
-                bpy.ops.tsr.compile_advanced()
-            else:
-                bpy.ops.tsr.compile()
+        split(self, context)
 
         return {'FINISHED'}
 
