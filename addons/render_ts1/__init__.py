@@ -783,7 +783,7 @@ def split(self, context):
             auto_continue = False
 
     if context.scene.tsr_auto_update_xml and auto_continue:
-        bpy.ops.tsr.update_xml()
+        update_xml(self, context)
 
     elif context.scene.tsr_auto_compile and auto_continue:
         if context.scene.tsr_use_advanced_compile:
@@ -805,6 +805,60 @@ class TS1R_OT_split(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def update_xml(self, context):
+    if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
+        self.report({'ERROR'}, "Please save your blend file")
+        return {'FINISHED'}
+
+    compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
+
+    if os.path.isfile(compiler_path) is False:
+        self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
+        return {'FINISHED'}
+
+    source_directory = bpy.path.abspath("//")
+    object_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
+    variant_name = None
+
+    if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
+        variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
+
+    if variant_name is None:
+        result = subprocess.run(
+            [
+                compiler_path,
+                "update-xml",
+                source_directory,
+                object_name,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.stderr != "":
+            self.report({'ERROR'}, result.stderr)
+    else:
+        result = subprocess.run(
+            [
+                compiler_path,
+                "update-xml",
+                source_directory,
+                object_name,
+                "-v",
+                variant_name,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.stderr != "":
+            self.report({'ERROR'}, result.stderr)
+
+    if context.scene.tsr_auto_compile:
+        if context.scene.tsr_use_advanced_compile:
+            bpy.ops.tsr.compile_advanced()
+        else:
+            bpy.ops.tsr.compile()
+
+
 class TS1R_OT_update_xml(bpy.types.Operator):
     """Update the object XML file with the split sprites"""
 
@@ -813,57 +867,7 @@ class TS1R_OT_update_xml(bpy.types.Operator):
     bl_options = {'REGISTER'}
 
     def execute(self, context):
-        if bpy.path.display_name_from_filepath(context.blend_data.filepath) == "":
-            self.report({'ERROR'}, "Please save your blend file")
-            return {'FINISHED'}
-
-        compiler_path = bpy.path.abspath(context.preferences.addons["render_ts1"].preferences.compiler_path)
-
-        if os.path.isfile(compiler_path) is False:
-            self.report({'ERROR'}, "Please set the path to the compiler in the add-on preferences")
-            return {'FINISHED'}
-
-        source_directory = bpy.path.abspath("//")
-        object_name = bpy.path.display_name_from_filepath(bpy.context.blend_data.filepath)
-        variant_name = None
-
-        if is_gltf_variants_enabled(context) and len(context.scene.gltf2_KHR_materials_variants_variants) > 0:
-            variant_name = context.scene.gltf2_KHR_materials_variants_variants[0].name
-
-        if variant_name is None:
-            result = subprocess.run(
-                [
-                    compiler_path,
-                    "update-xml",
-                    source_directory,
-                    object_name,
-                ],
-                capture_output=True,
-                text=True,
-            )
-            if result.stderr != "":
-                self.report({'ERROR'}, result.stderr)
-        else:
-            result = subprocess.run(
-                [
-                    compiler_path,
-                    "update-xml",
-                    source_directory,
-                    object_name,
-                    "-v",
-                    variant_name,
-                ],
-                capture_output=True,
-                text=True,
-            )
-            if result.stderr != "":
-                self.report({'ERROR'}, result.stderr)
-
-        if context.scene.tsr_auto_compile:
-            if context.scene.tsr_use_advanced_compile:
-                bpy.ops.tsr.compile_advanced()
-            else:
-                bpy.ops.tsr.compile()
+        update_xml(self, context)
 
         return {'FINISHED'}
 
