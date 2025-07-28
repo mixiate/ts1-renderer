@@ -8,7 +8,7 @@ This add-on requires the [TS1 Compiler](https://github.com/mixsims/ts1-compiler)
 
 You can find out how to use the add-on to render sprites and create objects for The Sims in the [Wiki](https://github.com/mixsims/ts1-renderer/wiki).
 
-Blender 4.1.x and 4.3.x are supported. 4.2.x is not supported due to a bug in those versions of Blender.
+Blender 4.1, 4.3, 4.4 and 4.5 are supported. 4.2 is not supported due to a bug in those versions of Blender.
 
 ## Features
 TS1 Renderer combined with TS1 Compiler has many features, here are some of them:
