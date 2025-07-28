@@ -2,7 +2,7 @@ bl_info = {
     "name": "The Sims 1 Renderer",
     "description": "Renders sprites for The Sims 1. To be used with the TS1 Compiler.",
     "author": "mix",
-    "version": (1, 4, 0),
+    "version": (1, 4, 1),
     "blender": (4, 1, 0),
     "location": "View3D > Sidebar > The Sims Tab",
     "warning": "",
