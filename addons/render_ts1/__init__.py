@@ -153,11 +153,9 @@ class TS1R_OT_set_render_resolution_and_camera(bpy.types.Operator):
 
 def update(self, context):
     if bpy.app.version[0] == 5:
-        if context.scene.compositing_node_group is None:
-            context.scene.compositing_node_group = bpy.data.node_groups.new(
-                "The Sims Renderer Nodes", "CompositorNodeTree"
-            )
-            context.scene.compositing_node_group.nodes.new('CompositorNodeRLayers')
+        if context.scene.compositing_node_group is None and bpy.data.node_groups.get("Compositor Nodes") is None:
+            bpy.ops.node.new_compositing_node_group(name="Compositor Nodes")
+            context.scene.compositing_node_group = bpy.data.node_groups.get("Compositor Nodes")
     else:
         context.scene.use_nodes = True
 
