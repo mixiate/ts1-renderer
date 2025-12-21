@@ -6,8 +6,8 @@ bl_info = {
     "blender": (4, 1, 0),
     "location": "View3D > Sidebar > The Sims Tab",
     "warning": "",
-    "doc_url": "https://github.com/mixsims/ts1-renderer/wiki",
-    "tracker_url": "https://github.com/mixsims/ts1-renderer/issues",
+    "doc_url": "https://github.com/mixiate/ts1-renderer/wiki",
+    "tracker_url": "https://github.com/mixiate/ts1-renderer/issues",
     "support": "COMMUNITY",
     "category": "Render",
 }
