@@ -1,0 +1,13 @@
+name: Release
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-slim
+
+    steps:
+    - uses: astral-sh/ruff-action@v4.0.0
+    - run: ruff format --check --diff
