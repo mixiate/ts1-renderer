@@ -22,16 +22,16 @@ if "bpy" in locals():
             importlib.reload(sys.modules[name])
 
 
-import bmesh
-import bpy
-import bpy_extras
-import copy
-import json
-import math
-import mathutils
-import os
-import shutil
-import subprocess
+import bmesh  #  noqa E402
+import bpy  #  noqa E402
+import bpy_extras  #  noqa E402
+import copy  #  noqa E402
+import json  #  noqa E402
+import math  #  noqa E402
+import mathutils  #  noqa E402
+import os  #  noqa E402
+import shutil  #  noqa E402
+import subprocess  #  noqa E402
 
 
 class TS1R_addon_preferences(bpy.types.AddonPreferences):
