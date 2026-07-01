@@ -175,7 +175,7 @@ def update(self, context):
         depth_group_node_tree.interface.new_socket(
             name="Depth",
             in_out='OUTPUT',
-            socket_type='NodeSocketFloat',
+            socket_type='NodeSocketColor',
         )
 
     depth_input_node = depth_group_node_tree.nodes.get("The Sims Depth Input")
@@ -426,6 +426,24 @@ class TS1R_OT_setup(bpy.types.Operator):
     def execute(self, context):
         context.scene.frame_start = 1
         context.scene.frame_end = 1
+        context.view_layer.use_pass_z = True
+
+        # --- FORCED RESET: Clear out old compositor nodes ---
+        group_names = ["The Sims Renderer Pre Depth", "The Sims Renderer"]
+        
+        # 1. Delete the underlying node group data blocks
+        for name in group_names:
+            if name in bpy.data.node_groups:
+                bpy.data.node_groups.remove(bpy.data.node_groups[name])
+
+        # 2. Delete the actual node instances from the scene's compositor
+        scene_tree = context.scene.compositing_node_group if bpy.app.version[0] >= 5 else context.scene.node_tree
+        if scene_tree is not None:
+            for node in scene_tree.nodes:
+                if node.name in group_names:
+                    scene_tree.nodes.remove(node)
+        # ----------------------------------------------------
+
         update(self, context)
         return {'FINISHED'}
 
