@@ -434,11 +434,12 @@ def render_color_and_alpha(context, direction, rotation, output_dir):
     output_dir = bpy.path.abspath("//") + output_dir
     import glob
 
-    color_matches = glob.glob(output_dir + "color*.png")
+    color_matches = glob.glob(output_dir + "color*.png") + glob.glob(output_dir + "color*.PNG")
     if color_matches:
         os.replace(color_matches[0], output_dir + direction + "_color.png")
 
-    alpha_matches = glob.glob(output_dir + "alpha*.exr")
+    # Fixed to catch both lowercase .exr and uppercase .EXR on Linux
+    alpha_matches = glob.glob(output_dir + "alpha*.exr") + glob.glob(output_dir + "alpha*.EXR")
     if alpha_matches:
         os.replace(alpha_matches[0], output_dir + direction + "_alpha.exr")
 
@@ -450,7 +451,8 @@ def render_depth(context, size, direction, rotation, output_dir, extra):
     import glob
     file_name = "_depth.exr" if extra is False else "_depth_extra.exr"
 
-    depth_matches = glob.glob(output_dir + "depth*.exr")
+    # Fixed to catch both lowercase .exr and uppercase .EXR on Linux
+    depth_matches = glob.glob(output_dir + "depth*.exr") + glob.glob(output_dir + "depth*.EXR")
     if depth_matches:
         os.replace(depth_matches[0], output_dir + size + "_" + direction + file_name)
 
