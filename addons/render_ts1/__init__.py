@@ -152,7 +152,7 @@ class TS1R_OT_set_render_resolution_and_camera(bpy.types.Operator):
 
 
 def update(self, context):
-    if bpy.app.version[0] == 5:
+    if bpy.app.version[0] >= 5:
         if context.scene.compositing_node_group is None and bpy.data.node_groups.get("Compositor Nodes") is None:
             bpy.ops.node.new_compositing_node_group(name="Compositor Nodes")
             context.scene.compositing_node_group = bpy.data.node_groups.get("Compositor Nodes")
@@ -191,7 +191,7 @@ def update(self, context):
         depth_alpha_convert_node.location = (200, 0)
         depth_alpha_convert_node.name = "The Sims Depth Alpha Convert"
         depth_alpha_convert_node.label = depth_alpha_convert_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             depth_alpha_convert_node.inputs[1].default_value = 'To Straight'
         else:
             depth_alpha_convert_node.mapping = 'PREMUL_TO_STRAIGHT'
@@ -203,7 +203,7 @@ def update(self, context):
         depth_switch_node.location = (400, 0)
         depth_switch_node.name = "The Sims Depth Switch"
         depth_switch_node.label = depth_switch_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             depth_switch_node.inputs[0].default_value = False
             depth_group_node_tree.links.new(depth_alpha_convert_node.outputs[0], depth_switch_node.inputs[1])
             depth_group_node_tree.links.new(depth_input_node.outputs[1], depth_switch_node.inputs[2])
@@ -220,7 +220,7 @@ def update(self, context):
         depth_output_node.label = depth_output_node.name
         depth_group_node_tree.links.new(depth_switch_node.outputs[0], depth_output_node.inputs[0])
 
-    if bpy.app.version[0] == 5:
+    if bpy.app.version[0] >= 5:
         scene_node_tree = context.scene.compositing_node_group
     else:
         scene_node_tree = context.scene.node_tree
@@ -270,7 +270,7 @@ def update(self, context):
         alpha_convert_node.location = (156, 55)
         alpha_convert_node.name = "The Sims Alpha Convert"
         alpha_convert_node.label = alpha_convert_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             alpha_convert_node.inputs[1].default_value = 'To Straight'
         else:
             alpha_convert_node.mapping = 'PREMUL_TO_STRAIGHT'
@@ -281,11 +281,11 @@ def update(self, context):
         color_output_node.location = (312, 105)
         color_output_node.name = "The Sims Color Output"
         color_output_node.label = color_output_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             color_output_node.format.media_type = 'IMAGE'
         color_output_node.format.file_format = 'PNG'
         color_output_node.format.color_mode = 'RGB'
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             color_output_node.file_name = "color"
             color_output_node.file_output_items.new('RGBA', "")
         else:
@@ -298,18 +298,18 @@ def update(self, context):
         alpha_output_node.location = (312, 0)
         alpha_output_node.name = "The Sims Alpha Output"
         alpha_output_node.label = alpha_output_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             alpha_output_node.format.media_type = 'IMAGE'
         alpha_output_node.format.file_format = 'OPEN_EXR'
         alpha_output_node.format.color_mode = 'RGB'
 
         # Only apply color management overrides on legacy Blender versions
-        if bpy.app.version[0] != 5:
+        if bpy.app.version[0] == 4:
             alpha_output_node.format.color_management = 'OVERRIDE'
             alpha_output_node.format.view_settings.view_transform = 'Raw'
             alpha_output_node.format.linear_colorspace_settings.name = 'Non-Color'
 
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             alpha_output_node.file_name = "alpha"
             alpha_output_node.file_output_items.new('RGBA', "")
         else:
@@ -321,18 +321,18 @@ def update(self, context):
         depth_output_node.location = (312, -105)
         depth_output_node.name = "The Sims Depth Output"
         depth_output_node.label = depth_output_node.name
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             depth_output_node.format.media_type = 'IMAGE'
         depth_output_node.format.file_format = 'OPEN_EXR'
         depth_output_node.format.color_mode = 'RGB'
 
         # Only apply color management overrides on legacy Blender versions
-        if bpy.app.version[0] != 5:
+        if bpy.app.version[0] == 4:
             depth_output_node.format.color_management = 'OVERRIDE'
             depth_output_node.format.view_settings.view_transform = 'Raw'
             depth_output_node.format.linear_colorspace_settings.name = 'Non-Color'
 
-        if bpy.app.version[0] == 5:
+        if bpy.app.version[0] >= 5:
             depth_output_node.file_name = "depth"
             depth_output_node.file_output_items.new('RGBA', "")
         else:
@@ -523,7 +523,7 @@ def render_rotation(context, direction, rotation, output_dir):
     context.scene.render.border_min_y = max(0, border_min_y - BORDER_PADDING)
     context.scene.render.border_max_y = min(1, border_max_y + BORDER_PADDING)
 
-    if bpy.app.version[0] == 5:
+    if bpy.app.version[0] >= 5:
         scene_node_tree = context.scene.compositing_node_group
     else:
         scene_node_tree = context.scene.node_tree
@@ -540,14 +540,14 @@ def render_rotation(context, direction, rotation, output_dir):
 
     render_group_node_tree.links.new(input_node.outputs[2], depth_output_node.inputs[0])
 
-    if bpy.app.version[0] == 5:
+    if bpy.app.version[0] >= 5:
         depth_switch_node.inputs[0].default_value = hasattr(bpy.app, "tsr_depth")
     else:
         depth_switch_node.check = hasattr(bpy.app, "tsr_depth")
 
     output_dir_relative = "//" + output_dir
 
-    if bpy.app.version[0] == 5:
+    if bpy.app.version[0] >= 5:
         color_output_node.directory = output_dir_relative
         alpha_output_node.directory = output_dir_relative
         depth_output_node.directory = output_dir_relative
