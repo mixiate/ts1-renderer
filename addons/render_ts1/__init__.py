@@ -325,7 +325,10 @@ def update(self, context):
         depth_output_node.format.file_format = 'OPEN_EXR'
         depth_output_node.format.color_mode = 'RGB'
         depth_output_node.format.color_management = 'OVERRIDE'
-        depth_output_node.format.view_settings.view_transform = 'Raw'
+        try:
+            depth_output_node.format.view_settings.view_transform = 'Raw'
+        except TypeError:
+            depth_output_node.format.view_settings.view_transform = 'Standard'
         depth_output_node.format.linear_colorspace_settings.name = 'Non-Color'
         if bpy.app.version[0] == 5:
             depth_output_node.file_name = "depth"
@@ -429,27 +432,27 @@ def render_color_and_alpha(context, direction, rotation, output_dir):
     bpy.ops.render.render(animation=False)
 
     output_dir = bpy.path.abspath("//") + output_dir
-    frame_number = "" if bpy.app.version[0] == 5 else "{:04d}".format(context.scene.frame_current)
-    os.replace(
-        output_dir + "color" + frame_number + ".png",
-        output_dir + direction + "_color.png",
-    )
-    os.replace(
-        output_dir + "alpha" + frame_number + ".exr",
-        output_dir + direction + "_alpha.exr",
-    )
+    import glob
+
+    color_matches = glob.glob(output_dir + "color*.png")
+    if color_matches:
+        os.replace(color_matches[0], output_dir + direction + "_color.png")
+
+    alpha_matches = glob.glob(output_dir + "alpha*.exr")
+    if alpha_matches:
+        os.replace(alpha_matches[0], output_dir + direction + "_alpha.exr")
 
 
 def render_depth(context, size, direction, rotation, output_dir, extra):
     bpy.ops.render.render(animation=False)
 
     output_dir = bpy.path.abspath("//") + output_dir
-    frame_number = "" if bpy.app.version[0] == 5 else "{:04d}".format(context.scene.frame_current)
+    import glob
     file_name = "_depth.exr" if extra is False else "_depth_extra.exr"
-    os.replace(
-        output_dir + "depth" + frame_number + ".exr",
-        output_dir + size + "_" + direction + file_name,
-    )
+
+    depth_matches = glob.glob(output_dir + "depth*.exr")
+    if depth_matches:
+        os.replace(depth_matches[0], output_dir + size + "_" + direction + file_name)
 
 
 def render_rotation(context, direction, rotation, output_dir):
