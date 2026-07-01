@@ -175,7 +175,7 @@ def update(self, context):
         depth_group_node_tree.interface.new_socket(
             name="Depth",
             in_out='OUTPUT',
-            socket_type='NodeSocketFloat',
+            socket_type='NodeSocketColor',
         )
 
     depth_input_node = depth_group_node_tree.nodes.get("The Sims Depth Input")
@@ -302,9 +302,13 @@ def update(self, context):
             alpha_output_node.format.media_type = 'IMAGE'
         alpha_output_node.format.file_format = 'OPEN_EXR'
         alpha_output_node.format.color_mode = 'RGB'
-        alpha_output_node.format.color_management = 'OVERRIDE'
-        alpha_output_node.format.view_settings.view_transform = 'Raw'
-        alpha_output_node.format.linear_colorspace_settings.name = 'Non-Color'
+        
+        # Only apply color management overrides on legacy Blender versions
+        if bpy.app.version[0] != 5:
+            alpha_output_node.format.color_management = 'OVERRIDE'
+            alpha_output_node.format.view_settings.view_transform = 'Raw'
+            alpha_output_node.format.linear_colorspace_settings.name = 'Non-Color'
+            
         if bpy.app.version[0] == 5:
             alpha_output_node.file_name = "alpha"
             alpha_output_node.file_output_items.new('RGBA', "")
@@ -321,9 +325,13 @@ def update(self, context):
             depth_output_node.format.media_type = 'IMAGE'
         depth_output_node.format.file_format = 'OPEN_EXR'
         depth_output_node.format.color_mode = 'RGB'
-        depth_output_node.format.color_management = 'OVERRIDE'
-        depth_output_node.format.view_settings.view_transform = 'Raw'
-        depth_output_node.format.linear_colorspace_settings.name = 'Non-Color'
+        
+        # Only apply color management overrides on legacy Blender versions
+        if bpy.app.version[0] != 5:
+            depth_output_node.format.color_management = 'OVERRIDE'
+            depth_output_node.format.view_settings.view_transform = 'Raw'
+            depth_output_node.format.linear_colorspace_settings.name = 'Non-Color'
+            
         if bpy.app.version[0] == 5:
             depth_output_node.file_name = "depth"
             depth_output_node.file_output_items.new('RGBA', "")
@@ -418,6 +426,24 @@ class TS1R_OT_setup(bpy.types.Operator):
     def execute(self, context):
         context.scene.frame_start = 1
         context.scene.frame_end = 1
+        context.view_layer.use_pass_z = True
+
+        # --- FORCED RESET: Clear out old compositor nodes ---
+        group_names = ["The Sims Renderer Pre Depth", "The Sims Renderer"]
+        
+        # 1. Delete the underlying node group data blocks
+        for name in group_names:
+            if name in bpy.data.node_groups:
+                bpy.data.node_groups.remove(bpy.data.node_groups[name])
+
+        # 2. Delete the actual node instances from the scene's compositor
+        scene_tree = context.scene.compositing_node_group if bpy.app.version[0] >= 5 else context.scene.node_tree
+        if scene_tree is not None:
+            for node in scene_tree.nodes:
+                if node.name in group_names:
+                    scene_tree.nodes.remove(node)
+        # ----------------------------------------------------
+
         update(self, context)
         return {'FINISHED'}
 
@@ -426,27 +452,29 @@ def render_color_and_alpha(context, direction, rotation, output_dir):
     bpy.ops.render.render(animation=False)
 
     output_dir = bpy.path.abspath("//") + output_dir
-    frame_number = "" if bpy.app.version[0] == 5 else "{:04d}".format(context.scene.frame_current)
-    os.replace(
-        output_dir + "color" + frame_number + ".png",
-        output_dir + direction + "_color.png",
-    )
-    os.replace(
-        output_dir + "alpha" + frame_number + ".exr",
-        output_dir + direction + "_alpha.exr",
-    )
+    import glob
+
+    color_matches = glob.glob(output_dir + "color*.png") + glob.glob(output_dir + "color*.PNG")
+    if color_matches:
+        os.replace(color_matches[0], output_dir + direction + "_color.png")
+
+    # Fixed to catch both lowercase .exr and uppercase .EXR on Linux
+    alpha_matches = glob.glob(output_dir + "alpha*.exr") + glob.glob(output_dir + "alpha*.EXR")
+    if alpha_matches:
+        os.replace(alpha_matches[0], output_dir + direction + "_alpha.exr")
 
 
 def render_depth(context, size, direction, rotation, output_dir, extra):
     bpy.ops.render.render(animation=False)
 
     output_dir = bpy.path.abspath("//") + output_dir
-    frame_number = "" if bpy.app.version[0] == 5 else "{:04d}".format(context.scene.frame_current)
+    import glob
     file_name = "_depth.exr" if extra is False else "_depth_extra.exr"
-    os.replace(
-        output_dir + "depth" + frame_number + ".exr",
-        output_dir + size + "_" + direction + file_name,
-    )
+
+    # Fixed to catch both lowercase .exr and uppercase .EXR on Linux
+    depth_matches = glob.glob(output_dir + "depth*.exr") + glob.glob(output_dir + "depth*.EXR")
+    if depth_matches:
+        os.replace(depth_matches[0], output_dir + size + "_" + direction + file_name)
 
 
 def render_rotation(context, direction, rotation, output_dir):
