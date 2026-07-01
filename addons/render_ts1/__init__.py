@@ -303,7 +303,10 @@ def update(self, context):
         alpha_output_node.format.file_format = 'OPEN_EXR'
         alpha_output_node.format.color_mode = 'RGB'
         alpha_output_node.format.color_management = 'OVERRIDE'
-        alpha_output_node.format.view_settings.view_transform = 'Raw'
+        try:
+            alpha_output_node.format.view_settings.view_transform = 'Raw'
+        except TypeError:
+            alpha_output_node.format.view_settings.view_transform = 'Standard'
         alpha_output_node.format.linear_colorspace_settings.name = 'Non-Color'
         if bpy.app.version[0] == 5:
             alpha_output_node.file_name = "alpha"
